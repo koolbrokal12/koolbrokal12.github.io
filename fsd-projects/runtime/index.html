@@ -1,55 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Runtime Neo</title>
-    <link rel="stylesheet" href="runtime.css" />
-    <script src="https://code.jquery.com/jquery-3.1.0.js"></script>
-    <script src="setup.js"></script>
-    <script src="levels.js"></script>
-    <script src="scenery.js"></script>
-    <script src="student.js"></script>
-    <script src="main.js"></script>
-    <style>
-      .nav-bar {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        z-index: 100;
-      }
-      
-      .nav-bar a {
-        display: inline-block;
-        padding: 10px 16px;
-        border-radius: 8px;
-        background: rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 14px;
-      }
-      
-      .nav-bar a:hover {
-        background: rgba(0, 0, 0, 0.8);
-      }
-    </style>
-  </head>
-  <body id="body">
-    <div class="nav-bar">
-      <a href="../../portfolio.html">← Back to Portfolio</a>
-    </div>
-    <canvas id="gameCanvas" width="1400" height="750"></canvas>
-    <img id="player" src="images/halle.png" />
-    <img id="projectile" src="images/projectile.png" />
-    <img id="basicPlatform" src="images/interactable/basicPlatform.png" />
-    <img id="spikes" src="images/interactable/spikes.png" />
-    <img id="bug" src="images/interactable/bug.png" />
-    <img id="healthUp" src="images/interactable/healthUp.png" />
-    <img id="flag" src="images/interactable/flag.png" />
-    <img id="moon" src="images/backgrounds/moon.png" />
-    <img id="building" src="images/backgrounds/building.png" />
-    <img id="lamp" src="images/backgrounds/lamp.png" />
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Runtime Neo</title>
+  <link rel="stylesheet" href="runtime.css" />
+  <script src="https://code.jquery.com/jquery-3.1.0.js"></script>
+  <script src="setup.js"></script>
+  <script src="levels.js"></script>
+  <script src="scenery.js"></script>
+  <script src="student.js"></script>
+  <script src="main.js"></script>
+</head>
+
+<body id="body">
+  <canvas id="gameCanvas" width="1400" height="750"></canvas>
+  <img id="player" src="images/halle.png" />
+  <img id="projectile" src="images/projectile.png" />
+  <img id="basicPlatform" src="images/interactable/basicPlatform.png" />
+  <img id="spikes" src="images/interactable/spikes.png" />
+  <img id="bug" src="images/interactable/bug.png" />
+  <img id="healthUp" src="images/interactable/healthUp.png" />
+  <img id="flag" src="images/interactable/flag.png" />
+  <img id="moon" src="images/backgrounds/moon.png" />
+  <img id="building" src="images/backgrounds/building.png" />
+  <img id="lamp" src="images/backgrounds/lamp.png" />
+</body>
+
 </html>
