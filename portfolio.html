@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kalvin — Gojo Theme</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gojo-blue: #2fb0ff;
+      --deep-blue: #041129;
+      --white: #ffffff;
+      --glass: rgba(255, 255, 255, 0.06);
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      font-family: Poppins, system-ui, Segoe UI, Roboto, Arial;
+    }
+
+    body {
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(47, 176, 255, 0.08), transparent 8%),
+        radial-gradient(900px 400px at 90% 90%, rgba(255, 255, 255, 0.06), transparent 6%),
+        linear-gradient(180deg, var(--deep-blue) 0%, #08172a 60%, #000 100%);
+      color: var(--white);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .card {
+      width: min(980px, 96%);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 18px;
+      padding: 36px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    .hero {
+      display: flex;
+      gap: 28px;
+      align-items: center
+    }
+
+    .avatar {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--white), #cfeeff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 30px rgba(47, 176, 255, 0.12), inset 0 -6px 18px rgba(0, 0, 0, 0.15);
+      position: relative;
+      flex-shrink: 0;
+      overflow: hidden
+    }
+
+    .avatar:after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(90deg, rgba(4, 23, 41, 0.03) 0 6px, transparent 6px 12px);
+      mix-blend-mode: overlay
+    }
+
+    .avatar .blindfold {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 48%;
+      height: 36px;
+      margin: auto;
+      background: linear-gradient(90deg, var(--deep-blue), var(--gojo-blue));
+      border-radius: 6px;
+      transform: translateY(-50%);
+      box-shadow: 0 6px 18px rgba(47, 176, 255, 0.12)
+    }
+
+    .avatar .hair {
+      position: absolute;
+      top: -20px;
+      left: -8px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 20%, #fff 0%, rgba(255, 255, 255, 0.8) 18%, rgba(255, 255, 255, 0.4) 40%, transparent 60%);
+      opacity: 0.95;
+      mix-blend-mode: screen
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: -0.8px
+    }
+
+    h2 {
+      margin: 6px 0 0 0;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.85)
+    }
+
+    .meta {
+      margin-top: 18px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap
+    }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--glass);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      font-weight: 600;
+      color: var(--gojo-blue)
+    }
+
+    .projects {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px
+    }
+
+    .project {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.03)
+    }
+
+    .project h3 {
+      margin: 0 0 6px 0;
+      font-size: 16px
+    }
+
+    .project p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px
+    }
+
+    a.btn {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--gojo-blue), #7ee0ff);
+      color: #00223a;
+      text-decoration: none;
+      font-weight: 700
+    }
+
+    footer {
+      margin-top: 24px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 13px
+    }
+
+    @media (max-width:560px) {
+      .hero {
+        flex-direction: column;
+        align-items: flex-start
+      }
+
+      .avatar {
+        width: 120px;
+        height: 120px
+      }
+
+      .card {
+        padding: 20px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <section class="hero">
+      <div class="avatar" aria-hidden>
+        <div class="hair"></div>
+        <div class="blindfold"></div>
+      </div>
+      <div>
+        <h1>Kalvin — Gojo-inspired Portfolio</h1>
+        <h2>Fan of Satoru Gojo — minimal, bright, and infinite</h2>
+        <div class="meta">
+          <div class="pill">Gojo Theme</div>
+          <div class="pill">Web Developer</div>
+          <div class="pill">Projects & Experiments</div>
+        </div>
+        <div style="margin-top:16px">
+          <a class="btn" href="index.html">View Homepage</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="projects">
+      <article class="project">
+        <h3>Bouncing Box</h3>
+        <p>Fun canvas game project with physics and controls. Try the demo in the projects folder.</p>
+        <a class="btn" href="fsd-projects/bouncing-box/index.html">Open</a>
+      </article>
+      <article class="project">
+        <h3>Platformer</h3>
+        <p>Classic platformer with collectibles and levels.</p>
+        <a class="btn" href="fsd-projects/platformer/index.html">Open</a>
+      </article>
+      <article class="project">
+        <h3>Runtime</h3>
+        <p>Game runtime demo showing scenery, physics and level loading.</p>
+        <a class="btn" href="fsd-projects/runtime/index.html">Open</a>
+      </article>
+      <article class="project">
+        <h3>FNAF Experiment</h3>
+        <p>Small interactive experiment exploring state and sound.</p>
+        <a class="btn" href="fsd-projects/fnaf/index.html">Open</a>
+      </article>
+    </section>
+
+    <footer>
+      Designed with a Gojo-inspired palette — feel free to ask for adjustments.
+    </footer>
+  </main>
+</body>
+
+</html>

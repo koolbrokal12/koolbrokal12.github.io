@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FNAF-like Mini Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <main id="game">
+    <header>
+      <h1>FNAF-like Mini Game</h1>
+      <div class="status">
+        <div>Time: <span id="time">12 AM</span></div>
+        <div>Power: <span id="power">100%</span></div>
+        <div>Camera: <span id="camera">Cam 1</span></div>
+      </div>
+    </header>
+
+    <div class="instructions">
+      Use the camera buttons, light, and door to survive until 6 AM.
+    </div>
+
+    <section class="top-row">
+      <div id="office" class="room">
+        <div id="player-office">Office</div>
+        <div id="door-indicator">Door: <span id="door-state">Open</span></div>
+        <div id="light-indicator">Light: <span id="light-state">Off</span></div>
+      </div>
+
+      <div class="controls">
+        <div class="cameras">
+          <button class="cam-btn" data-cam="0">Cam 1</button>
+          <button class="cam-btn" data-cam="1">Cam 2</button>
+          <button class="cam-btn" data-cam="2">Cam 3</button>
+        </div>
+
+        <div class="toggles">
+          <button id="toggle-light">Light</button>
+          <button id="toggle-door">Door</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="camera-view" id="camera-view">
+      <div class="camera" data-cam="0">Camera 1 — Storage</div>
+      <div class="camera" data-cam="1">Camera 2 — Hallway</div>
+      <div class="camera" data-cam="2">Camera 3 — Stage</div>
+    </section>
+
+    <div id="message" class="hidden"></div>
+    <div id="jumpscare" class="hidden" role="dialog" aria-hidden="true">
+      <img id="jumpscare-img" class="hidden" alt="jumpscare image">
+      <div id="jumpscare-text">JUMPSCARE!</div>
+    </div>
+    <div id="end-controls" class="hidden">
+      <button id="restart-btn">Restart Night</button>
+    </div>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+
+</html>

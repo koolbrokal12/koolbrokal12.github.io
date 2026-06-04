@@ -1,0 +1,167 @@
+:root {
+  --bg: #0b0b0f;
+  --panel: #131316;
+  --accent: #ffcc00;
+  --muted: #888;
+}
+* {
+  box-sizing: border-box;
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #05050a, #0b0b0f);
+  color: #fff;
+}
+main#game {
+  max-width: 1000px;
+  margin: 24px auto;
+  padding: 20px;
+  background: var(--panel);
+  border-radius: 8px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.status {
+  display: flex;
+  gap: 12px;
+  color: var(--muted);
+}
+.top-row {
+  display: flex;
+  gap: 12px;
+}
+.room {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  background: #0d0d10;
+  min-height: 180px;
+  position: relative;
+}
+#player-office {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+}
+.controls {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cameras,
+.toggles {
+  display: flex;
+  gap: 8px;
+}
+button {
+  background: #1b1b1f;
+  color: #fff;
+  border: 0;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.camera-view {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+.camera {
+  padding: 12px;
+  background: #0f0f12;
+  border-radius: 6px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hidden {
+  display: none;
+}
+#message {
+  position: fixed;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  background: #111;
+  padding: 24px;
+  border-radius: 8px;
+  font-size: 20px;
+}
+
+.instructions {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #c7d2ff;
+}
+
+#end-controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#restart-btn {
+  min-width: 160px;
+}
+
+#jumpscare-img {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto 16px;
+  border-radius: 8px;
+}
+
+/* jumpscare */
+#jumpscare {
+  position: fixed;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  background: #a00;
+  color: #fff;
+  padding: 40px 60px;
+  border-radius: 8px;
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  z-index: 9999;
+  text-align: center;
+}
+
+.cam-btn.active {
+  outline: 2px solid var(--accent);
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.12);
+}
+
+/* states */
+.door-closed {
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.25) inset;
+}
+.light-on {
+  box-shadow: 0 0 20px rgba(255, 255, 200, 0.08) inset;
+}
+
+@media (max-width: 800px) {
+  main#game {
+    margin: 12px;
+    padding: 12px;
+  }
+  .controls {
+    width: 100%;
+  }
+  .top-row {
+    flex-direction: column;
+  }
+}
