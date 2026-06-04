@@ -160,6 +160,31 @@
       font-weight: 700
     }
 
+    .header-nav {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 100;
+    }
+
+    .header-nav a {
+      display: inline-block;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: var(--glass);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--gojo-blue);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .header-nav a:hover {
+      background: rgba(47, 176, 255, 0.12);
+      border-color: rgba(47, 176, 255, 0.3);
+    }
+
     footer {
       margin-top: 24px;
       text-align: center;
@@ -186,6 +211,9 @@
 </head>
 
 <body>
+  <nav class="header-nav">
+    <a href="index.html">← Back Home</a>
+  </nav>
   <main class="card">
     <section class="hero">
       <div class="avatar" aria-hidden>
@@ -199,9 +227,6 @@
           <div class="pill">Gojo Theme</div>
           <div class="pill">Web Developer</div>
           <div class="pill">Projects & Experiments</div>
-        </div>
-        <div style="margin-top:16px">
-          <a class="btn" href="index.html">View Homepage</a>
         </div>
       </div>
     </section>
