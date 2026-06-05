@@ -663,11 +663,12 @@
     stopAmbient();
     // use file if available
     if (jumpscareAudio) {
+      jumpscareAudio.volume = 0.18;
       jumpscareAudio.play().catch(() => {});
     } else {
-      playTone(60, 0.4, "sawtooth", 0.15);
-      playTone(420, 0.8, "sawtooth", 0.06);
-      playTone(1400, 0.18, "square", 0.05);
+      playTone(60, 0.4, "sawtooth", 0.1);
+      playTone(420, 0.8, "sawtooth", 0.04);
+      playTone(1400, 0.18, "square", 0.03);
     }
     const j = document.getElementById("jumpscare");
     // golden special: flash static briefly
