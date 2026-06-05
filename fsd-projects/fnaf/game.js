@@ -11,13 +11,21 @@
   const office = document.getElementById("player-office");
   const cameraLabel = document.getElementById("camera");
   const nightEl = document.getElementById("night");
+  const mainMenu = document.getElementById("main-menu");
+  const newGameBtn = document.getElementById("new-game-btn");
+  const continueBtn = document.getElementById("continue-btn");
+  const menuNightEl = document.getElementById("menu-night");
+  const phoneCallBtn = document.getElementById("phone-call-btn");
+  const phoneMuteBtn = document.getElementById("phone-mute-btn");
+  const phoneBubble = document.getElementById("phone-bubble");
 
   let currentCam = 0;
   let power = 100;
   let hour = 0; // 0..6 representing 12AM-6AM
   let night = 1;
-  let running = true;
+  let running = false;
   let seconds = 0;
+  let phoneMuted = false;
 
   const rooms = ["Storage", "Hallway", "Stage"];
 
@@ -38,6 +46,189 @@
         currentCam !== null ? `Cam ${currentCam + 1}` : "None";
     }
     updateCameraViews();
+    saveGameState();
+    savePrefs();
+  }
+
+  function getSavedState() {
+    try {
+      return JSON.parse(localStorage.getItem("fnaf-save"));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function hasSavedGame() {
+    return !!getSavedState();
+  }
+
+  function saveGameState() {
+    if (!running) return;
+    const save = {
+      night,
+      hour,
+      power,
+      currentCam,
+      lightOn,
+      doorClosed,
+      seconds,
+      anims: anims.map((a) => ({
+        name: a.name,
+        pos: a.pos,
+        moveChance: a.moveChance,
+        patience: a.patience,
+        unseenTicks: a.unseenTicks,
+        type: a.type,
+      })),
+    };
+    localStorage.setItem("fnaf-save", JSON.stringify(save));
+  }
+
+  function loadGameState() {
+    const save = getSavedState();
+    if (!save) return false;
+    night = save.night;
+    hour = save.hour;
+    power = save.power;
+    currentCam = save.currentCam;
+    lightOn = save.lightOn;
+    doorClosed = save.doorClosed;
+    seconds = save.seconds || 0;
+    anims.forEach((a) => {
+      const saved = save.anims.find((item) => item.name === a.name);
+      if (saved) {
+        a.pos = saved.pos;
+        a.moveChance = saved.moveChance;
+        if (a.type === "freddy") a.patience = saved.patience || 0;
+        if (a.type === "foxy") a.unseenTicks = saved.unseenTicks || 0;
+      }
+    });
+    document.querySelector(".room").classList.toggle("light-on", lightOn);
+    document.querySelector(".room").classList.toggle("door-closed", doorClosed);
+    lightStateEl.textContent = lightOn ? "On" : "Off";
+    doorStateEl.textContent = doorClosed ? "Closed" : "Open";
+    return true;
+  }
+
+  // preferences (persisted independent of running state)
+  function getPrefs() {
+    try {
+      return JSON.parse(localStorage.getItem("fnaf-prefs")) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function savePrefs() {
+    try {
+      const p = { phoneMuted };
+      localStorage.setItem("fnaf-prefs", JSON.stringify(p));
+    } catch (e) {}
+  }
+
+  // Phone Guy content and playback (uses SpeechSynthesis when available)
+  const phoneGuyLines = [
+    "Hello? Hello? Hey, uh, you're doing great for your first night.",
+    "Um, don't worry too much — just keep an eye on the cameras and conserve power",
+    "The doors will stop animatronics when closed, and the lights will help you see in the office.",
+    "Uh, good luck. It's going to be a long night."
+  ];
+
+  function showPhoneBubble(text, timeout = 4000) {
+    if (!phoneBubble) return;
+    phoneBubble.textContent = text;
+    phoneBubble.classList.remove("hidden");
+    clearTimeout(phoneBubble._t);
+    phoneBubble._t = setTimeout(() => phoneBubble.classList.add("hidden"), timeout);
+  }
+
+  function speakLine(text) {
+    if (phoneMuted) return Promise.resolve();
+    return new Promise((resolve) => {
+      showPhoneBubble(text);
+      if (window.speechSynthesis) {
+        const ut = new SpeechSynthesisUtterance(text);
+        ut.rate = 1;
+        ut.pitch = 0.9;
+        ut.onend = () => resolve();
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(ut);
+      } else {
+        // fallback: just show bubble then resolve
+        setTimeout(resolve, 1600 + Math.min(3000, text.length * 40));
+      }
+    });
+  }
+
+  async function playPhoneGuyIntro() {
+    for (const line of phoneGuyLines) {
+      await speakLine(line);
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    phoneBubble.classList.add("hidden");
+  }
+
+  function setMenuNight() {
+    if (menuNightEl) menuNightEl.textContent = night;
+  }
+
+  function updateContinueButton() {
+    if (!continueBtn) return;
+    continueBtn.disabled = !hasSavedGame();
+  }
+
+  function showActiveCamera() {
+    cameraView.querySelectorAll(".camera").forEach((c) => c.classList.add("hidden"));
+    const active = cameraView.querySelector(`.camera[data-cam="${currentCam}"]`);
+    if (active) active.classList.remove("hidden");
+    camBtns.forEach((b) =>
+      b.classList.toggle("active", Number(b.dataset.cam) === currentCam),
+    );
+  }
+
+  function openMainMenu() {
+    if (mainMenu) mainMenu.classList.remove("hidden");
+    running = false;
+    setMenuNight();
+    updateContinueButton();
+    renderStatus();
+  }
+
+  function closeMenu() {
+    if (mainMenu) mainMenu.classList.add("hidden");
+    running = true;
+    showActiveCamera();
+    renderStatus();
+    startAmbient();
+  }
+
+  function resetGameState() {
+    night = 1;
+    hour = 0;
+    seconds = 0;
+    power = 100;
+    currentCam = 0;
+    lightOn = false;
+    doorClosed = false;
+    anims.forEach((a) => {
+      a.pos = 0;
+      if (a.name === "Bonnie") a.moveChance = 0.18;
+      if (a.name === "Chica") a.moveChance = 0.12;
+      if (a.name === "Freddy") a.moveChance = 0.14;
+      if (a.name === "Foxy") a.moveChance = 0.13;
+      if (a.type === "freddy") a.patience = 0;
+      if (a.type === "foxy") a.unseenTicks = 0;
+    });
+    document.body.style.filter = "";
+    document.querySelector(".room").classList.remove("light-on", "door-closed");
+    lightStateEl.textContent = "Off";
+    doorStateEl.textContent = "Open";
+    cameraView.querySelectorAll(".camera").forEach((c, i) => {
+      c.classList.toggle("hidden", i !== 0);
+    });
+    camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
+    setNightDifficulty();
+    renderStatus();
   }
 
   function updateCameraViews() {
@@ -115,6 +306,34 @@
       playClick();
     }),
   );
+
+  newGameBtn?.addEventListener("click", () => {
+    resetGameState();
+    closeMenu();
+    // play Phone Guy intro when starting a new game
+    setTimeout(() => playPhoneGuyIntro().catch(() => {}), 300);
+  });
+
+  continueBtn?.addEventListener("click", () => {
+    if (loadGameState()) {
+      closeMenu();
+    } else {
+      showMessage("No saved night found.");
+    }
+  });
+
+  // phone controls
+  phoneCallBtn?.addEventListener("click", () => {
+    playPhoneGuyIntro().catch(() => {});
+  });
+
+  phoneMuteBtn?.addEventListener("click", () => {
+    phoneMuted = !phoneMuted;
+    phoneMuteBtn.classList.toggle("muted", phoneMuted);
+    phoneMuteBtn.textContent = phoneMuted ? "Unmute Phone Guy" : "Mute Phone Guy";
+    if (phoneMuted && window.speechSynthesis) window.speechSynthesis.cancel();
+    savePrefs();
+  });
 
   let lightOn = false;
   let doorClosed = false;
@@ -294,6 +513,7 @@
     camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
     setNightDifficulty();
     renderStatus();
+    startAmbient();
   });
 
   // --- asset loading: try to use real files if present ---
@@ -446,8 +666,18 @@
   });
   camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
 
-  // start ambient audio for atmosphere
-  startAmbient();
+  // load prefs
+  (function initPrefs() {
+    const p = getPrefs();
+    phoneMuted = !!p.phoneMuted;
+    if (phoneMuteBtn) {
+      phoneMuteBtn.classList.toggle("muted", phoneMuted);
+      phoneMuteBtn.textContent = phoneMuted ? "Unmute Phone Guy" : "Mute Phone Guy";
+    }
+  })();
+
+  // show menu on load
+  openMainMenu();
 
   // keyboard controls: 1-3 cameras, L light, D door
   window.addEventListener("keydown", (e) => {

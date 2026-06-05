@@ -9,6 +9,24 @@
 </head>
 
 <body>
+  <div id="main-menu" class="menu-overlay">
+    <div class="menu-panel">
+      <h2>Five Nights at Freddy's</h2>
+      <div class="animatronic-row">
+        <span>🐰 Bonnie</span>
+        <span>🪕 Chica</span>
+        <span>🐻 Freddy</span>
+        <span>🦊 Foxy</span>
+      </div>
+      <div class="menu-night">Night <span id="menu-night">1</span></div>
+      <div class="menu-buttons">
+        <button id="new-game-btn">New Game</button>
+        <button id="continue-btn">Continue</button>
+      </div>
+      <div class="menu-hint">Continue resumes your last night if available.</div>
+    </div>
+  </div>
+
   <main id="game">
     <header>
       <h1>FNAF-like Mini Game</h1>
@@ -27,7 +45,10 @@
     <section class="top-row">
       <div id="office" class="room">
         <div id="player-office">Office</div>
-        <div id="door-indicator">Door: <span id="door-state">Open</span></div>
+        <div class="door-indicators">
+          <div id="left-door-indicator">Left Door: <span id="left-door-state">Open</span></div>
+          <div id="right-door-indicator">Right Door: <span id="right-door-state">Open</span></div>
+        </div>
         <div id="light-indicator">Light: <span id="light-state">Off</span></div>
       </div>
 
@@ -40,7 +61,13 @@
 
         <div class="toggles">
           <button id="toggle-light">Light</button>
-          <button id="toggle-door">Door</button>
+          <button id="toggle-left-door">Left Door</button>
+          <button id="toggle-right-door">Right Door</button>
+        </div>
+        <div class="phone-panel">
+          <button id="phone-call-btn">Phone</button>
+          <button id="phone-mute-btn">Mute Phone Guy</button>
+          <div id="phone-bubble" class="hidden" aria-live="polite"></div>
         </div>
       </div>
     </section>

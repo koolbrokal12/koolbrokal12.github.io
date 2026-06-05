@@ -61,6 +61,27 @@ header {
   display: flex;
   gap: 8px;
 }
+
+.phone-panel {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+#phone-bubble {
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  max-width: 220px;
+}
+
+#phone-mute-btn.muted {
+  background: #4a4a4f;
+  color: #ccc;
+}
 button {
   background: #1b1b1f;
   color: #fff;
@@ -93,6 +114,69 @@ button {
   font-size: 13px;
   color: var(--muted);
   text-align: center;
+}
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.menu-panel {
+  width: min(520px, 90%);
+  padding: 28px;
+  border-radius: 18px;
+  background: #111;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.75);
+  text-align: center;
+}
+.menu-panel h2 {
+  margin: 0 0 14px;
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+}
+.animatronic-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin: 16px 0;
+  font-size: 1rem;
+  color: #ffcc00;
+}
+.menu-night {
+  margin: 14px 0 10px;
+  font-size: 1.1rem;
+  color: #fff;
+}
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+.menu-buttons button {
+  background: #27272d;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.menu-buttons button:hover:not(:disabled) {
+  background: #37373f;
+}
+#continue-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.menu-hint {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.95rem;
 }
 .hidden {
   display: none;
