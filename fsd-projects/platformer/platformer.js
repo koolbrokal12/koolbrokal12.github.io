@@ -27,10 +27,8 @@ $(function () {
     //////////////////////////////////
 
     // TODO 1 - Enable the Grid
-    // toggleGrid();
+    toggleGrid();
 
-    // TODO 2 - Create Platforms
-    // Example platforms (x, y, width, height, color)
     createPlatform(180, 620, 300, 20, "green");
     createPlatform(520, 520, 240, 20, "orange");
     createPlatform(860, 420, 280, 20, "purple");
@@ -39,21 +37,14 @@ $(function () {
     createPlatform(620, 520, 180, 20, "yellow", 0, 0, 0, 460, 540, 1); // moving vertical platform
     createBadPlatform(730, 610, 160, 20, "red");
 
-    // TODO 3 - Create Collectables
-    // Example collectables (type, x, y, gravity, bounce)
     createCollectable("diamond", 320, 560, 0, 0.6);
     createCollectable("database", 620, 460, 0, 0.6);
     createCollectable("grace", 920, 380, 0, 1, 860, 1120, 2); // moving collectable
 
-    // TODO 4 - Create Cannons
-
-    // Example cannons (side, position, delay)
     createCannon("top", 700, 2000, 24, 24, 100, 1200, 2); // moving cannon with medium projectiles
     createCannon("left", 450, 2500, 10, 10, 150, 600, 1); // smaller projectiles
-
-    //////////////////////////////////
-    // ONLY CHANGE ABOVE THIS POINT //
-    //////////////////////////////////
+    createCannon("right", 300, 3000, 20, 20, 200, 500, 2); // additional cannon to meet project requirements
+    createCannon("left", 670, 0, 0, 0, 670, 670, 0, 0);
   }
 
   registerSetup(setup);
