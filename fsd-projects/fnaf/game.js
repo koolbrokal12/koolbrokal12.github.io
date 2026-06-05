@@ -10,28 +10,86 @@
   const message = document.getElementById("message");
   const office = document.getElementById("player-office");
   const cameraLabel = document.getElementById("camera");
+  const nightEl = document.getElementById("night");
 
   let currentCam = 0;
   let power = 100;
   let hour = 0; // 0..6 representing 12AM-6AM
+  let night = 1;
   let running = true;
   let seconds = 0;
 
   const rooms = ["Storage", "Hallway", "Stage"];
 
   const anims = [
-    { name: "Bonnie", pos: 0, moveChance: 0.18 },
-    { name: "Chica", pos: 0, moveChance: 0.12 },
+    { name: "Bonnie", pos: 0, moveChance: 0.18, type: "standard" },
+    { name: "Chica", pos: 0, moveChance: 0.12, type: "standard" },
+    { name: "Freddy", pos: 0, moveChance: 0.14, type: "freddy", patience: 0 },
+    { name: "Foxy", pos: 0, moveChance: 0.13, type: "foxy", unseenTicks: 0 },
   ];
 
   function renderStatus() {
-    const displayHour = 12 + hour;
+    const displayHour = hour === 0 ? 12 : hour;
+    if (nightEl) nightEl.textContent = night;
     timeEl.textContent = `${displayHour} AM`;
     powerEl.textContent = Math.max(0, Math.floor(power)) + "%";
     if (cameraLabel) {
       cameraLabel.textContent =
         currentCam !== null ? `Cam ${currentCam + 1}` : "None";
     }
+    updateCameraViews();
+  }
+
+  function updateCameraViews() {
+    rooms.forEach((_, i) => {
+      const view = document.querySelector(
+        `.camera[data-cam="${i}"] .camera-visitors`,
+      );
+      if (!view) return;
+      const visitors = anims.filter((a) => a.pos === i).map((a) => a.name);
+      view.textContent = visitors.length
+        ? `Visitors: ${visitors.join(", ")}`
+        : "Visitors: None";
+    });
+    const officeVisitors = anims.filter((a) => a.pos >= 3).map((a) => a.name);
+    office.textContent = officeVisitors.length
+      ? `Office — Close: ${officeVisitors.join(", ")}`
+      : "Office";
+  }
+
+  function setNightDifficulty() {
+    anims.forEach((a) => {
+      if (a.name === "Bonnie") a.moveChance = 0.18 + (night - 1) * 0.06;
+      if (a.name === "Chica") a.moveChance = 0.12 + (night - 1) * 0.06;
+      if (a.name === "Freddy") a.moveChance = 0.14 + (night - 1) * 0.05;
+      if (a.name === "Foxy") a.moveChance = 0.13 + (night - 1) * 0.05;
+    });
+  }
+
+  function advanceNight() {
+    showMessage(`Night ${night} complete! Starting Night ${night + 1}...`);
+    night += 1;
+    hour = 0;
+    seconds = 0;
+    power = 100;
+    currentCam = 0;
+    lightOn = false;
+    doorClosed = false;
+    anims.forEach((a) => {
+      a.pos = 0;
+      if (a.type === "freddy") a.patience = 0;
+      if (a.type === "foxy") a.unseenTicks = 0;
+    });
+    setNightDifficulty();
+    document.querySelector(".room").classList.remove("light-on", "door-closed");
+    lightStateEl.textContent = "Off";
+    doorStateEl.textContent = "Open";
+    cameraView.querySelectorAll(".camera").forEach((c, i) => {
+      c.classList.toggle("hidden", i !== 0);
+    });
+    camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
+    renderStatus();
+    updateCameraViews();
   }
 
   function showMessage(text) {
@@ -212,13 +270,19 @@
     running = true;
     power = 100;
     hour = 0;
+    night = 1;
     seconds = 0;
     currentCam = 0;
     lightOn = false;
     doorClosed = false;
     anims.forEach((a) => {
       a.pos = 0;
-      a.moveChance = a.name === "Bonnie" ? 0.18 : 0.12;
+      if (a.name === "Bonnie") a.moveChance = 0.18;
+      if (a.name === "Chica") a.moveChance = 0.12;
+      if (a.name === "Freddy") a.moveChance = 0.14;
+      if (a.name === "Foxy") a.moveChance = 0.13;
+      if (a.type === "freddy") a.patience = 0;
+      if (a.type === "foxy") a.unseenTicks = 0;
     });
     document.body.style.filter = "";
     document.querySelector(".room").classList.remove("light-on", "door-closed");
@@ -228,7 +292,7 @@
       c.classList.toggle("hidden", i !== 0);
     });
     camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
-    startAmbient();
+    setNightDifficulty();
     renderStatus();
   });
 
@@ -299,6 +363,46 @@
 
     // animatics move with more interesting behavior
     for (const a of anims) {
+      if (a.type === "freddy") {
+        if (currentCam === 2 && a.pos >= 2) {
+          if (Math.random() < 0.55) {
+            a.pos = Math.max(0, a.pos - 1);
+            a.patience = 0;
+          }
+          continue;
+        }
+
+        if (currentCam !== 2) {
+          a.patience = Math.min(5, a.patience + 1);
+        }
+
+        const freddyChance = a.moveChance + hour * 0.03 + a.patience * 0.04;
+        if (Math.random() < freddyChance) {
+          a.pos = Math.min(3, a.pos + 1);
+          a.patience = 0;
+        }
+        if (doorClosed && a.pos >= 3) a.pos = 2;
+        continue;
+      }
+
+      if (a.type === "foxy") {
+        if (currentCam === 1 && a.pos >= 1) {
+          if (Math.random() < 0.4) {
+            a.pos = Math.max(0, a.pos - 1);
+          }
+          a.unseenTicks = 0;
+        } else {
+          a.unseenTicks = Math.min(6, a.unseenTicks + 1);
+        }
+
+        const foxyChance = a.moveChance + hour * 0.04 + a.unseenTicks * 0.05;
+        if (Math.random() < foxyChance) {
+          a.pos = Math.min(3, a.pos + 1);
+        }
+        if (doorClosed && a.pos >= 3) a.pos = 2;
+        continue;
+      }
+
       // if player is viewing the anim's room, they may retreat
       if (currentCam !== null && a.pos === currentCam) {
         if (Math.random() < 0.45) {
@@ -324,6 +428,10 @@
 
     // win condition
     if (hour >= 6) {
+      if (night < 2) {
+        advanceNight();
+        return;
+      }
       win();
       return;
     }

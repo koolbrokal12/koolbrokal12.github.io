@@ -13,6 +13,7 @@
     <header>
       <h1>FNAF-like Mini Game</h1>
       <div class="status">
+        <div>Night: <span id="night">1</span></div>
         <div>Time: <span id="time">12 AM</span></div>
         <div>Power: <span id="power">100%</span></div>
         <div>Camera: <span id="camera">Cam 1</span></div>
@@ -45,9 +46,18 @@
     </section>
 
     <section class="camera-view" id="camera-view">
-      <div class="camera" data-cam="0">Camera 1 — Storage</div>
-      <div class="camera" data-cam="1">Camera 2 — Hallway</div>
-      <div class="camera" data-cam="2">Camera 3 — Stage</div>
+      <div class="camera" data-cam="0">
+        <div class="camera-title">Camera 1 — Storage</div>
+        <div class="camera-visitors">Visitors: None</div>
+      </div>
+      <div class="camera" data-cam="1">
+        <div class="camera-title">Camera 2 — Hallway</div>
+        <div class="camera-visitors">Visitors: None</div>
+      </div>
+      <div class="camera" data-cam="2">
+        <div class="camera-title">Camera 3 — Stage</div>
+        <div class="camera-visitors">Visitors: None</div>
+      </div>
     </section>
 
     <div id="message" class="hidden"></div>
