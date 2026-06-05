@@ -16,10 +16,14 @@
   const mainMenu = document.getElementById("main-menu");
   const newGameBtn = document.getElementById("new-game-btn");
   const continueBtn = document.getElementById("continue-btn");
+  const customNightBtn = document.getElementById("custom-night-btn");
+  const customNightSelect = document.getElementById("custom-night-select");
+  const customUnlockNote = document.getElementById("custom-unlock-note");
   const menuNightEl = document.getElementById("menu-night");
   const phoneCallBtn = document.getElementById("phone-call-btn");
   const phoneMuteBtn = document.getElementById("phone-mute-btn");
   const phoneBubble = document.getElementById("phone-bubble");
+  const menuBtn = document.getElementById("menu-btn");
 
   let currentCam = 0;
   let power = 100;
@@ -28,14 +32,17 @@
   let running = false;
   let seconds = 0;
   let phoneMuted = false;
+  let customUnlocked = false;
+  let customMode = false;
+  let selectedCustomNight = 1;
 
   const rooms = ["Storage", "Hallway", "Stage"];
 
   const anims = [
-    { name: "Bonnie", pos: 0, moveChance: 0.18, type: "standard" },
-    { name: "Chica", pos: 0, moveChance: 0.12, type: "standard" },
-    { name: "Freddy", pos: 0, moveChance: 0.14, type: "freddy", patience: 0 },
-    { name: "Foxy", pos: 0, moveChance: 0.13, type: "foxy", unseenTicks: 0 },
+    { name: "Bonnie", pos: 1, moveChance: 0.22, type: "standard" },
+    { name: "Chica", pos: 1, moveChance: 0.18, type: "standard" },
+    { name: "Freddy", pos: 0, moveChance: 0.1, type: "freddy", patience: 0 },
+    { name: "Foxy", pos: 1, moveChance: 0.18, type: "foxy", unseenTicks: 0 },
     { name: "Golden Freddy", pos: 0, moveChance: 0.04, type: "golden" },
   ];
 
@@ -52,6 +59,11 @@
     if (a.name.toLowerCase().includes("freddy")) return "🐻";
     if (a.name.toLowerCase().includes("foxy")) return "🦊";
     return "👾";
+  }
+
+  const goldenPossessors = ["Evan", "Cassidy"];
+  function goldenLoreName() {
+    return `Golden Freddy (${goldenPossessors.join(" & ")})`;
   }
 
   const staticOverlay = document.getElementById("static-overlay");
@@ -153,7 +165,11 @@
 
   function savePrefs() {
     try {
-      const p = { phoneMuted };
+      const p = {
+        phoneMuted,
+        customUnlocked,
+        customNight: selectedCustomNight,
+      };
       localStorage.setItem("fnaf-prefs", JSON.stringify(p));
     } catch (e) {}
   }
@@ -207,9 +223,58 @@
     if (menuNightEl) menuNightEl.textContent = night;
   }
 
-  function updateContinueButton() {
-    if (!continueBtn) return;
-    continueBtn.disabled = !hasSavedGame();
+  function updateMenuButtons() {
+    if (continueBtn) continueBtn.disabled = !hasSavedGame();
+    if (customNightBtn) customNightBtn.disabled = !customUnlocked;
+    if (customNightSelect) customNightSelect.disabled = !customUnlocked;
+    if (customUnlockNote)
+      customUnlockNote.textContent = customUnlocked
+        ? "Custom Night unlocked! Choose a night and start playing."
+        : "Beat Night 5 to unlock Custom Night mode.";
+  }
+
+  function unlockCustomNight() {
+    if (customUnlocked) return;
+    customUnlocked = true;
+    savePrefs();
+    updateMenuButtons();
+  }
+
+  function startNight(startNightNumber = 1, isCustom = false) {
+    customMode = isCustom;
+    night = startNightNumber;
+    hour = 0;
+    seconds = 0;
+    power = 100;
+    currentCam = 0;
+    lightOn = false;
+    leftDoorClosed = false;
+    rightDoorClosed = false;
+    anims.forEach((a) => {
+      a.pos = 0;
+      if (a.type === "freddy") a.patience = 0;
+      if (a.type === "foxy") a.unseenTicks = 0;
+    });
+    setNightDifficulty();
+    document.body.style.filter = "";
+    document.querySelector(".room").classList.remove("light-on", "door-closed");
+    if (lightStateEl) lightStateEl.textContent = "Off";
+    if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
+    if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
+    cameraView.querySelectorAll(".camera").forEach((c, i) => {
+      c.classList.toggle("hidden", i !== 0);
+    });
+    camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
+    if (mainMenu) mainMenu.classList.add("hidden");
+    running = true;
+    showActiveCamera();
+    renderStatus();
+    startAmbient();
+    if (!isCustom) {
+      setTimeout(() => playPhoneGuyIntro().catch(() => {}), 300);
+    } else {
+      showMessage(`Custom Night ${night} started!`);
+    }
   }
 
   function showActiveCamera() {
@@ -229,7 +294,7 @@
     if (mainMenu) mainMenu.classList.remove("hidden");
     running = false;
     setMenuNight();
-    updateContinueButton();
+    updateMenuButtons();
     renderStatus();
   }
 
@@ -402,18 +467,32 @@
   );
 
   newGameBtn?.addEventListener("click", () => {
-    resetGameState();
-    closeMenu();
-    // play Phone Guy intro when starting a new game
-    setTimeout(() => playPhoneGuyIntro().catch(() => {}), 300);
+    startNight(1, false);
   });
 
   continueBtn?.addEventListener("click", () => {
     if (loadGameState()) {
+      customMode = false;
       closeMenu();
     } else {
       showMessage("No saved night found.");
     }
+  });
+
+  customNightBtn?.addEventListener("click", () => {
+    const target = Number(customNightSelect?.value || 1);
+    selectedCustomNight = target;
+    startNight(target, true);
+  });
+
+  customNightSelect?.addEventListener("change", () => {
+    selectedCustomNight = Number(customNightSelect.value);
+    savePrefs();
+  });
+
+  menuBtn?.addEventListener("click", () => {
+    hideJumpscare();
+    openMainMenu();
   });
 
   // phone controls
@@ -479,7 +558,11 @@
           return true;
         }
         if (!blocked && lightOn) {
-          lose(a.name);
+          if (a.type === "golden" && night === 5) {
+            lose(goldenLoreName());
+          } else {
+            lose(a.name);
+          }
           return true;
         }
         // if door blocked, they can't get in
@@ -499,6 +582,21 @@
   function win() {
     running = false;
     stopAmbient();
+    if (customMode) {
+      showMessage(`You survived Custom Night ${night}!`);
+      document.body.style.filter = "brightness(1.2)";
+      document.getElementById("end-controls").classList.remove("hidden");
+      return;
+    }
+
+    if (night === 5) {
+      unlockCustomNight();
+      showMessage("You survived Night 5! Custom Night unlocked.");
+      document.body.style.filter = "brightness(1.2)";
+      document.getElementById("end-controls").classList.remove("hidden");
+      return;
+    }
+
     showMessage("You survived the night! You win!");
     document.body.style.filter = "brightness(1.2)";
     document.getElementById("end-controls").classList.remove("hidden");
@@ -567,9 +665,9 @@
     if (jumpscareAudio) {
       jumpscareAudio.play().catch(() => {});
     } else {
-      playTone(60, 0.4, "sawtooth", 0.3);
-      playTone(420, 0.8, "sawtooth", 0.12);
-      playTone(1400, 0.18, "square", 0.1);
+      playTone(60, 0.4, "sawtooth", 0.15);
+      playTone(420, 0.8, "sawtooth", 0.06);
+      playTone(1400, 0.18, "square", 0.05);
     }
     const j = document.getElementById("jumpscare");
     // golden special: flash static briefly
@@ -603,38 +701,8 @@
   }
 
   restartBtn?.addEventListener("click", () => {
-    // reset state
     hideJumpscare();
-    running = true;
-    power = 100;
-    hour = 0;
-    night = 1;
-    seconds = 0;
-    currentCam = 0;
-    lightOn = false;
-    leftDoorClosed = false;
-    rightDoorClosed = false;
-    anims.forEach((a) => {
-      a.pos = 0;
-      if (a.name === "Bonnie") a.moveChance = 0.18;
-      if (a.name === "Chica") a.moveChance = 0.12;
-      if (a.name === "Freddy") a.moveChance = 0.14;
-      if (a.name === "Foxy") a.moveChance = 0.13;
-      if (a.type === "freddy") a.patience = 0;
-      if (a.type === "foxy") a.unseenTicks = 0;
-    });
-    document.body.style.filter = "";
-    document.querySelector(".room").classList.remove("light-on", "door-closed");
-    lightStateEl.textContent = "Off";
-    if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
-    if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
-    cameraView.querySelectorAll(".camera").forEach((c, i) => {
-      c.classList.toggle("hidden", i !== 0);
-    });
-    camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
-    setNightDifficulty();
-    renderStatus();
-    startAmbient();
+    startNight(night, customMode);
   });
 
   // --- asset loading: try to use real files if present ---
@@ -664,7 +732,7 @@
     const js = await tryLoadAsset(base + "jumpscare.mp3");
     if (js) {
       jumpscareAudio = new Audio(js);
-      jumpscareAudio.volume = 0.9;
+      jumpscareAudio.volume = 0.45;
     }
     const img = await tryLoadAsset(base + "jumpscare.png");
     if (img && jumpscareImg) {
@@ -762,8 +830,30 @@
         }
       }
 
-      // normal advance
-      if (Math.random() < a.moveChance + hour * 0.03) {
+      // compute effective move chance with simple AI modifiers
+      let effectiveChance = a.moveChance + hour * 0.03;
+      // standard anims (Bonnie, Chica) are more aggressive when not observed
+      if (a.type === "standard") {
+        if (currentCam === a.pos)
+          effectiveChance -= 0.12; // you're watching them
+        else effectiveChance += 0.08; // more likely to advance when not seen
+      }
+      // Freddy is stealthy; moves slower but gains patience
+      if (a.type === "freddy") {
+        if (currentCam === 2) effectiveChance -= 0.15; // watching stage slows him
+        effectiveChance += (a.patience || 0) * 0.02;
+      }
+      // Foxy is sensitive to being unseen; already tracked via unseenTicks
+      if (a.type === "foxy") {
+        effectiveChance += (a.unseenTicks || 0) * 0.02;
+      }
+      // Golden Freddy rare but dangerous; keep low base but scale with night
+      if (a.type === "golden") {
+        effectiveChance += (night - 1) * 0.02;
+      }
+
+      // normal advance using effective chance
+      if (Math.random() < Math.max(0, effectiveChance)) {
         a.pos = Math.min(3, a.pos + 1);
       }
       // small chance to backtrack
@@ -771,6 +861,13 @@
 
       // Golden Freddy special: when reaching office, high chance to cause instant jump
       if (a.type === "golden" && a.pos >= 3) {
+        if (night === 5) {
+          showMessage(
+            `${goldenLoreName()} has fully possessed the suit on Night 5!`,
+          );
+          lose(goldenLoreName());
+          return;
+        }
         if (Math.random() < 0.6) {
           lose(a.name);
           return;
@@ -813,12 +910,17 @@
   (function initPrefs() {
     const p = getPrefs();
     phoneMuted = !!p.phoneMuted;
+    customUnlocked = !!p.customUnlocked;
+    selectedCustomNight = p.customNight || 1;
     if (phoneMuteBtn) {
       phoneMuteBtn.classList.toggle("muted", phoneMuted);
       phoneMuteBtn.textContent = phoneMuted
         ? "Unmute Phone Guy"
         : "Mute Phone Guy";
     }
+    if (customNightSelect)
+      customNightSelect.value = String(selectedCustomNight);
+    updateMenuButtons();
   })();
 
   // show menu on load

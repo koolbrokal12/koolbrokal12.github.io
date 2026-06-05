@@ -22,8 +22,20 @@
       <div class="menu-buttons">
         <button id="new-game-btn">New Game</button>
         <button id="continue-btn">Continue</button>
+        <button id="custom-night-btn" disabled>Custom Night</button>
       </div>
       <div class="menu-hint">Continue resumes your last night if available.</div>
+      <div class="menu-hint">
+        <label for="custom-night-select">Choose Custom Night:</label>
+        <select id="custom-night-select" disabled>
+          <option value="1">Night 1</option>
+          <option value="2">Night 2</option>
+          <option value="3">Night 3</option>
+          <option value="4">Night 4</option>
+          <option value="5">Night 5</option>
+        </select>
+      </div>
+      <div id="custom-unlock-note" class="menu-hint">Beat Night 5 to unlock Custom Night mode.</div>
     </div>
   </div>
 
@@ -100,6 +112,7 @@
     <div id="static-overlay" class="static-overlay hidden" aria-hidden="true"></div>
     <div id="end-controls" class="hidden">
       <button id="restart-btn">Restart Night</button>
+      <button id="menu-btn">Back to Menu</button>
     </div>
   </main>
 
