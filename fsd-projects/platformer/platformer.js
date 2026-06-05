@@ -31,20 +31,25 @@ $(function () {
 
     // TODO 2 - Create Platforms
     // Example platforms (x, y, width, height, color)
-    createPlatform(200, 520, 300, 20, "green");
-    createPlatform(600, 420, 240, 20, "orange");
-    createPlatform(1000, 300, 280, 20, "purple");
+    createPlatform(180, 620, 300, 20, "green");
+    createPlatform(520, 520, 240, 20, "orange");
+    createPlatform(860, 420, 280, 20, "purple");
+    createPlatform(1180, 320, 180, 20, "pink");
+    createPlatform(300, 420, 220, 20, "cyan", 300, 560, 2, 0, 0, 0); // moving horizontal platform
+    createPlatform(620, 520, 180, 20, "yellow", 0, 0, 0, 460, 540, 1); // moving vertical platform
+    createBadPlatform(730, 610, 160, 20, "red");
 
     // TODO 3 - Create Collectables
     // Example collectables (type, x, y, gravity, bounce)
-    createCollectable("diamond", 320, 480, 0, 0.6);
-    createCollectable("database", 680, 360, 0, 0.6);
+    createCollectable("diamond", 320, 560, 0, 0.6);
+    createCollectable("database", 620, 460, 0, 0.6);
+    createCollectable("grace", 920, 380, 0, 1, 860, 1120, 2); // moving collectable
 
     // TODO 4 - Create Cannons
 
     // Example cannons (side, position, delay)
-    createCannon("top", 700, 2000);
-    createCannon("left", 450, 2500);
+    createCannon("top", 700, 2000, 24, 24, 100, 1200, 2); // moving cannon with medium projectiles
+    createCannon("left", 450, 2500, 10, 10, 150, 600, 1); // smaller projectiles
 
     //////////////////////////////////
     // ONLY CHANGE ABOVE THIS POINT //
