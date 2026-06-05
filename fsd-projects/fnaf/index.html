@@ -46,8 +46,10 @@
       <div id="office" class="room">
         <div id="player-office">Office</div>
         <div class="door-indicators">
-          <div id="left-door-indicator">Left Door: <span id="left-door-state">Open</span></div>
-          <div id="right-door-indicator">Right Door: <span id="right-door-state">Open</span></div>
+          <div id="left-door-indicator">Left Door: <span id="left-door-state">Open</span> <span id="left-door-light"
+              class="door-light"></span></div>
+          <div id="right-door-indicator">Right Door: <span id="right-door-state">Open</span> <span id="right-door-light"
+              class="door-light"></span></div>
         </div>
         <div id="light-indicator">Light: <span id="light-state">Off</span></div>
       </div>
@@ -76,14 +78,17 @@
       <div class="camera" data-cam="0">
         <div class="camera-title">Camera 1 — Storage</div>
         <div class="camera-visitors">Visitors: None</div>
+        <div class="camera-overlay"></div>
       </div>
       <div class="camera" data-cam="1">
         <div class="camera-title">Camera 2 — Hallway</div>
         <div class="camera-visitors">Visitors: None</div>
+        <div class="camera-overlay"></div>
       </div>
       <div class="camera" data-cam="2">
         <div class="camera-title">Camera 3 — Stage</div>
         <div class="camera-visitors">Visitors: None</div>
+        <div class="camera-overlay"></div>
       </div>
     </section>
 
@@ -92,6 +97,7 @@
       <img id="jumpscare-img" class="hidden" alt="jumpscare image">
       <div id="jumpscare-text">JUMPSCARE!</div>
     </div>
+    <div id="static-overlay" class="static-overlay hidden" aria-hidden="true"></div>
     <div id="end-controls" class="hidden">
       <button id="restart-btn">Restart Night</button>
     </div>

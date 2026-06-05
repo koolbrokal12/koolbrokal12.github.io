@@ -4,8 +4,10 @@
   const cameraView = document.getElementById("camera-view");
   const camBtns = document.querySelectorAll(".cam-btn");
   const toggleLight = document.getElementById("toggle-light");
-  const toggleDoor = document.getElementById("toggle-door");
-  const doorStateEl = document.getElementById("door-state");
+  const toggleLeftDoor = document.getElementById("toggle-left-door");
+  const toggleRightDoor = document.getElementById("toggle-right-door");
+  const leftDoorStateEl = document.getElementById("left-door-state");
+  const rightDoorStateEl = document.getElementById("right-door-state");
   const lightStateEl = document.getElementById("light-state");
   const message = document.getElementById("message");
   const office = document.getElementById("player-office");
@@ -34,7 +36,30 @@
     { name: "Chica", pos: 0, moveChance: 0.12, type: "standard" },
     { name: "Freddy", pos: 0, moveChance: 0.14, type: "freddy", patience: 0 },
     { name: "Foxy", pos: 0, moveChance: 0.13, type: "foxy", unseenTicks: 0 },
+    { name: "Golden Freddy", pos: 0, moveChance: 0.04, type: "golden" },
   ];
+
+  function animSide(a) {
+    // Bonnie and Foxy are on the right, Chica and Freddy (and Golden Freddy) are on the left
+    const right = ["Bonnie", "Foxy"];
+    return right.includes(a.name) ? "right" : "left";
+  }
+
+  function animEmoji(a) {
+    if (a.type === "golden") return "👑";
+    if (a.name.toLowerCase().includes("bonnie")) return "🐰";
+    if (a.name.toLowerCase().includes("chica")) return "🐔";
+    if (a.name.toLowerCase().includes("freddy")) return "🐻";
+    if (a.name.toLowerCase().includes("foxy")) return "🦊";
+    return "👾";
+  }
+
+  const staticOverlay = document.getElementById("static-overlay");
+  function showStatic(ms = 1200) {
+    if (!staticOverlay) return;
+    staticOverlay.classList.add("active");
+    setTimeout(() => staticOverlay.classList.remove("active"), ms);
+  }
 
   function renderStatus() {
     const displayHour = hour === 0 ? 12 : hour;
@@ -70,7 +95,8 @@
       power,
       currentCam,
       lightOn,
-      doorClosed,
+      leftDoorClosed,
+      rightDoorClosed,
       seconds,
       anims: anims.map((a) => ({
         name: a.name,
@@ -92,7 +118,8 @@
     power = save.power;
     currentCam = save.currentCam;
     lightOn = save.lightOn;
-    doorClosed = save.doorClosed;
+    leftDoorClosed = !!save.leftDoorClosed;
+    rightDoorClosed = !!save.rightDoorClosed;
     seconds = save.seconds || 0;
     anims.forEach((a) => {
       const saved = save.anims.find((item) => item.name === a.name);
@@ -104,9 +131,14 @@
       }
     });
     document.querySelector(".room").classList.toggle("light-on", lightOn);
-    document.querySelector(".room").classList.toggle("door-closed", doorClosed);
+    document
+      .querySelector(".room")
+      .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
     lightStateEl.textContent = lightOn ? "On" : "Off";
-    doorStateEl.textContent = doorClosed ? "Closed" : "Open";
+    if (leftDoorStateEl)
+      leftDoorStateEl.textContent = leftDoorClosed ? "Closed" : "Open";
+    if (rightDoorStateEl)
+      rightDoorStateEl.textContent = rightDoorClosed ? "Closed" : "Open";
     return true;
   }
 
@@ -131,7 +163,7 @@
     "Hello? Hello? Hey, uh, you're doing great for your first night.",
     "Um, don't worry too much — just keep an eye on the cameras and conserve power",
     "The doors will stop animatronics when closed, and the lights will help you see in the office.",
-    "Uh, good luck. It's going to be a long night."
+    "Uh, good luck. It's going to be a long night.",
   ];
 
   function showPhoneBubble(text, timeout = 4000) {
@@ -139,7 +171,10 @@
     phoneBubble.textContent = text;
     phoneBubble.classList.remove("hidden");
     clearTimeout(phoneBubble._t);
-    phoneBubble._t = setTimeout(() => phoneBubble.classList.add("hidden"), timeout);
+    phoneBubble._t = setTimeout(
+      () => phoneBubble.classList.add("hidden"),
+      timeout,
+    );
   }
 
   function speakLine(text) {
@@ -178,8 +213,12 @@
   }
 
   function showActiveCamera() {
-    cameraView.querySelectorAll(".camera").forEach((c) => c.classList.add("hidden"));
-    const active = cameraView.querySelector(`.camera[data-cam="${currentCam}"]`);
+    cameraView
+      .querySelectorAll(".camera")
+      .forEach((c) => c.classList.add("hidden"));
+    const active = cameraView.querySelector(
+      `.camera[data-cam="${currentCam}"]`,
+    );
     if (active) active.classList.remove("hidden");
     camBtns.forEach((b) =>
       b.classList.toggle("active", Number(b.dataset.cam) === currentCam),
@@ -209,7 +248,8 @@
     power = 100;
     currentCam = 0;
     lightOn = false;
-    doorClosed = false;
+    leftDoorClosed = false;
+    rightDoorClosed = false;
     anims.forEach((a) => {
       a.pos = 0;
       if (a.name === "Bonnie") a.moveChance = 0.18;
@@ -222,7 +262,8 @@
     document.body.style.filter = "";
     document.querySelector(".room").classList.remove("light-on", "door-closed");
     lightStateEl.textContent = "Off";
-    doorStateEl.textContent = "Open";
+    if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
+    if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
     cameraView.querySelectorAll(".camera").forEach((c, i) => {
       c.classList.toggle("hidden", i !== 0);
     });
@@ -242,10 +283,60 @@
         ? `Visitors: ${visitors.join(", ")}`
         : "Visitors: None";
     });
+    // door-specific visitors & lights
+    const leftDoorVisitors = anims
+      .filter((a) => a.pos === 2 && animSide(a) === "left")
+      .map((a) => a.name);
+    const rightDoorVisitors = anims
+      .filter((a) => a.pos === 2 && animSide(a) === "right")
+      .map((a) => a.name);
+    if (leftDoorStateEl)
+      leftDoorStateEl.textContent = leftDoorVisitors.length
+        ? `Close: ${leftDoorVisitors.join(", ")}`
+        : leftDoorClosed
+          ? "Closed"
+          : "Open";
+    if (rightDoorStateEl)
+      rightDoorStateEl.textContent = rightDoorVisitors.length
+        ? `Close: ${rightDoorVisitors.join(", ")}`
+        : rightDoorClosed
+          ? "Closed"
+          : "Open";
+    const leftDoorLight = document.getElementById("left-door-light");
+    const rightDoorLight = document.getElementById("right-door-light");
+    if (leftDoorLight)
+      leftDoorLight.classList.toggle(
+        "active",
+        leftDoorVisitors.length > 0 || leftDoorClosed,
+      );
+    if (rightDoorLight)
+      rightDoorLight.classList.toggle(
+        "active",
+        rightDoorVisitors.length > 0 || rightDoorClosed,
+      );
+
     const officeVisitors = anims.filter((a) => a.pos >= 3).map((a) => a.name);
     office.textContent = officeVisitors.length
       ? `Office — Close: ${officeVisitors.join(", ")}`
       : "Office";
+
+    // update camera overlays with anim icons
+    rooms.forEach((_, i) => {
+      const overlay = document.querySelector(
+        `.camera[data-cam="${i}"] .camera-overlay`,
+      );
+      if (!overlay) return;
+      overlay.innerHTML = "";
+      const icons = anims
+        .filter((a) => a.pos === i)
+        .map((a) => {
+          const s = document.createElement("span");
+          s.className = "anim-icon";
+          s.textContent = animEmoji(a);
+          return s;
+        });
+      icons.forEach((n) => overlay.appendChild(n));
+    });
   }
 
   function setNightDifficulty() {
@@ -254,6 +345,7 @@
       if (a.name === "Chica") a.moveChance = 0.12 + (night - 1) * 0.06;
       if (a.name === "Freddy") a.moveChance = 0.14 + (night - 1) * 0.05;
       if (a.name === "Foxy") a.moveChance = 0.13 + (night - 1) * 0.05;
+      if (a.type === "golden") a.moveChance = 0.04 + (night - 1) * 0.05;
     });
   }
 
@@ -265,7 +357,8 @@
     power = 100;
     currentCam = 0;
     lightOn = false;
-    doorClosed = false;
+    leftDoorClosed = false;
+    rightDoorClosed = false;
     anims.forEach((a) => {
       a.pos = 0;
       if (a.type === "freddy") a.patience = 0;
@@ -274,7 +367,8 @@
     setNightDifficulty();
     document.querySelector(".room").classList.remove("light-on", "door-closed");
     lightStateEl.textContent = "Off";
-    doorStateEl.textContent = "Open";
+    if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
+    if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
     cameraView.querySelectorAll(".camera").forEach((c, i) => {
       c.classList.toggle("hidden", i !== 0);
     });
@@ -330,13 +424,16 @@
   phoneMuteBtn?.addEventListener("click", () => {
     phoneMuted = !phoneMuted;
     phoneMuteBtn.classList.toggle("muted", phoneMuted);
-    phoneMuteBtn.textContent = phoneMuted ? "Unmute Phone Guy" : "Mute Phone Guy";
+    phoneMuteBtn.textContent = phoneMuted
+      ? "Unmute Phone Guy"
+      : "Mute Phone Guy";
     if (phoneMuted && window.speechSynthesis) window.speechSynthesis.cancel();
     savePrefs();
   });
 
   let lightOn = false;
-  let doorClosed = false;
+  let leftDoorClosed = false;
+  let rightDoorClosed = false;
 
   toggleLight.addEventListener("click", () => {
     if (!running) return;
@@ -347,11 +444,26 @@
     playClick();
   });
 
-  toggleDoor.addEventListener("click", () => {
+  toggleLeftDoor?.addEventListener("click", () => {
     if (!running) return;
-    doorClosed = !doorClosed;
-    document.querySelector(".room").classList.toggle("door-closed", doorClosed);
-    doorStateEl.textContent = doorClosed ? "Closed" : "Open";
+    leftDoorClosed = !leftDoorClosed;
+    document
+      .querySelector(".room")
+      .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
+    if (leftDoorStateEl)
+      leftDoorStateEl.textContent = leftDoorClosed ? "Closed" : "Open";
+    renderStatus();
+    playClick();
+  });
+
+  toggleRightDoor?.addEventListener("click", () => {
+    if (!running) return;
+    rightDoorClosed = !rightDoorClosed;
+    document
+      .querySelector(".room")
+      .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
+    if (rightDoorStateEl)
+      rightDoorStateEl.textContent = rightDoorClosed ? "Closed" : "Open";
     renderStatus();
     playClick();
   });
@@ -359,17 +471,18 @@
   function checkLose() {
     for (const a of anims) {
       if (a.pos >= 3) {
-        // in office
-        if (!doorClosed && !lightOn) {
+        // in office — determine which door would block them
+        const side = animSide(a);
+        const blocked = side === "left" ? leftDoorClosed : rightDoorClosed;
+        if (!blocked && !lightOn) {
           lose(a.name);
           return true;
         }
-        if (!doorClosed && lightOn) {
-          // light lets you see them but they still can get you when close
+        if (!blocked && lightOn) {
           lose(a.name);
           return true;
         }
-        // if door closed, they can't get in
+        // if door blocked, they can't get in
       }
     }
     return false;
@@ -380,7 +493,7 @@
     stopAmbient();
     showMessage("JUMPSCARED by " + name + "! You lost.");
     document.body.style.filter = "brightness(0.3)";
-    triggerJumpscare();
+    triggerJumpscare(name);
   }
 
   function win() {
@@ -448,7 +561,7 @@
     }
   }
 
-  function triggerJumpscare() {
+  function triggerJumpscare(kind) {
     stopAmbient();
     // use file if available
     if (jumpscareAudio) {
@@ -458,8 +571,14 @@
       playTone(420, 0.8, "sawtooth", 0.12);
       playTone(1400, 0.18, "square", 0.1);
     }
-
     const j = document.getElementById("jumpscare");
+    // golden special: flash static briefly
+    if (kind && kind.toLowerCase().includes("golden")) showStatic(900);
+    // apply golden style when appropriate
+    j.classList.toggle(
+      "jumpscare-golden",
+      !!(kind && kind.toLowerCase().includes("golden")),
+    );
     // show image if available, otherwise text
     if (jumpscareImg && jumpscareImg.src) {
       jumpscareImg.classList.remove("hidden");
@@ -493,7 +612,8 @@
     seconds = 0;
     currentCam = 0;
     lightOn = false;
-    doorClosed = false;
+    leftDoorClosed = false;
+    rightDoorClosed = false;
     anims.forEach((a) => {
       a.pos = 0;
       if (a.name === "Bonnie") a.moveChance = 0.18;
@@ -506,7 +626,8 @@
     document.body.style.filter = "";
     document.querySelector(".room").classList.remove("light-on", "door-closed");
     lightStateEl.textContent = "Off";
-    doorStateEl.textContent = "Open";
+    if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
+    if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
     cameraView.querySelectorAll(".camera").forEach((c, i) => {
       c.classList.toggle("hidden", i !== 0);
     });
@@ -573,7 +694,7 @@
     // power drain
     let drain = 0.05;
     if (lightOn) drain += 0.35;
-    if (doorClosed) drain += 0.15;
+    if (leftDoorClosed || rightDoorClosed) drain += 0.15;
     if (currentCam !== null) drain += 0.12;
     power -= drain;
     if (power <= 0) {
@@ -601,7 +722,12 @@
           a.pos = Math.min(3, a.pos + 1);
           a.patience = 0;
         }
-        if (doorClosed && a.pos >= 3) a.pos = 2;
+        if (
+          (animSide(a) === "left" && leftDoorClosed) ||
+          (animSide(a) === "right" && rightDoorClosed)
+        ) {
+          if (a.pos >= 3) a.pos = 2;
+        }
         continue;
       }
 
@@ -619,7 +745,12 @@
         if (Math.random() < foxyChance) {
           a.pos = Math.min(3, a.pos + 1);
         }
-        if (doorClosed && a.pos >= 3) a.pos = 2;
+        if (
+          (animSide(a) === "left" && leftDoorClosed) ||
+          (animSide(a) === "right" && rightDoorClosed)
+        ) {
+          if (a.pos >= 3) a.pos = 2;
+        }
         continue;
       }
 
@@ -637,6 +768,18 @@
       }
       // small chance to backtrack
       if (Math.random() < 0.02) a.pos = Math.max(0, a.pos - 1);
+
+      // Golden Freddy special: when reaching office, high chance to cause instant jump
+      if (a.type === "golden" && a.pos >= 3) {
+        if (Math.random() < 0.6) {
+          lose(a.name);
+          return;
+        } else {
+          showMessage("Golden Freddy vanished...");
+          a.pos = 0;
+          continue;
+        }
+      }
     }
 
     // update office indicator
@@ -648,7 +791,7 @@
 
     // win condition
     if (hour >= 6) {
-      if (night < 2) {
+      if (night < 5) {
         advanceNight();
         return;
       }
@@ -672,7 +815,9 @@
     phoneMuted = !!p.phoneMuted;
     if (phoneMuteBtn) {
       phoneMuteBtn.classList.toggle("muted", phoneMuted);
-      phoneMuteBtn.textContent = phoneMuted ? "Unmute Phone Guy" : "Mute Phone Guy";
+      phoneMuteBtn.textContent = phoneMuted
+        ? "Unmute Phone Guy"
+        : "Mute Phone Guy";
     }
   })();
 
@@ -683,7 +828,10 @@
   window.addEventListener("keydown", (e) => {
     if (!running) return;
     if (e.key === "l" || e.key === "L") toggleLight.click();
-    if (e.key === "d" || e.key === "D") toggleDoor.click();
+    if (e.key === "d" || e.key === "D") {
+      if (toggleLeftDoor) toggleLeftDoor.click();
+      if (toggleRightDoor) toggleRightDoor.click();
+    }
     if (["1", "2", "3"].includes(e.key)) {
       const idx = Number(e.key) - 1;
       const btn = Array.from(camBtns)[idx];

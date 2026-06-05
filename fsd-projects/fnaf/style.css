@@ -70,7 +70,7 @@ header {
 }
 
 #phone-bubble {
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   color: #fff;
   padding: 8px 10px;
   border-radius: 8px;
@@ -81,6 +81,72 @@ header {
 #phone-mute-btn.muted {
   background: #4a4a4f;
   color: #ccc;
+}
+
+.door-indicators {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#left-door-indicator,
+#right-door-indicator {
+  font-size: 14px;
+  color: #ffb3b3;
+}
+
+.door-closed-indicator {
+  color: #ff6b6b;
+  font-weight: 700;
+}
+
+.door-light {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6) inset;
+}
+.door-light.active {
+  background: linear-gradient(90deg, #fffcaa, #ffd36b);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.camera-overlay {
+  position: absolute;
+  inset: 0 0 0 0;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  padding-bottom: 12px;
+}
+.camera-overlay .anim-icon {
+  font-size: 20px;
+  opacity: 0.9;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+
+.static-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  mix-blend-mode: overlay;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-in-out;
+  z-index: 10000;
+}
+.static-overlay.active {
+  opacity: 0.9;
+}
+
+#jumpscare.jumpscare-golden {
+  background: linear-gradient(90deg, #222 0%, #000 50%, #222 100%);
+  color: #ffdf00;
 }
 button {
   background: #1b1b1f;
