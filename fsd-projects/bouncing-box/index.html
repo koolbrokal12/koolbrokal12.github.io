@@ -72,43 +72,120 @@
       //////////////////////////////////////////////////////////////////
       /////////////////// YOUR CODE BELOW HERE /////////////////////////
       //////////////////////////////////////////////////////////////////
+// ==========================================
+// GAME TRACKERS (VARIABLES)
+// ==========================================
+var positionX = 0;  // Horizontal position of the box
+var positionY = 0;  // Vertical position of the box
+var points = 0;     // Player score
+var speedX = 10;    // Horizontal speed and direction
+var speedY = 10;    // Vertical speed and direction
+var mistakes = 0;   // Missed click counter
 
-      // TODO 2 - Variable declarations
+// Grabs the total height of the user's browser window
+var boardHeight = jQuery(window).height(); 
 
+// ==========================================
+// TOOLS & HELPERS
+// ==========================================
 
+// Moves the box on the screen using X and Y coordinates
+function moveBoxTo(newPositionX, newPositionY) {
+    box.css("left", newPositionX);
+    box.css("top", newPositionY); 
+}
 
+// Generates a random color for the box and background
+function getRandomColor() {
+    var r = Math.floor(Math.random() * 256);
+    var g = Math.floor(Math.random() * 256);
+    var b = Math.floor(Math.random() * 256);
+    return "rgb(" + r + ", " + g + ", " + b + ")";
+}
 
+// ==========================================
+// THE CORE GAME LOOP
+// ==========================================
+function update() {
+    // Constantly push the box forward on both axes
+    positionX = positionX + speedX;
+    positionY = positionY + speedY;
 
-      /**
-       * This Function will be called 20 times/second.
-       * Each time it is called, it should move the Box to a new location.
-       * If the box drifts off the screen, turn it around!
-       */
-      function update() {
+    // Left and Right wall collisions
+    if (positionX > boardWidth) {
+        speedX *= -1; 
+    }
+    if (positionX < 0) {
+        speedX *= -1; 
+    }
 
+    // Top and Bottom wall collisions
+    if (positionY > boardHeight) {
+        speedY *= -1; 
+    }
+    if (positionY < 0) {
+        speedY *= -1; 
+    }
 
+    // Paint the box at its updated position
+    moveBoxTo(positionX, positionY);
+}
 
+// ==========================================
+// WHAT HAPPENS WHEN YOU HIT THE BOX
+// ==========================================
+function handleBoxClick() {
+    // Add a point and update the box display
+    points++;
+    changeBoxText(points);
 
-      }
+    // Teleport the box to a random spot on the screen
+    positionX = Math.random() * (boardWidth - 50);
+    positionY = Math.random() * (boardHeight - 50);
 
-      /**
-       * This Function will be called each time the box is clicked.
-       * Each time it is called, it should perform each of the following actions:
-       * - increase the points total
-       * - increase the speed
-       * - move the box to the left side of the screen.
-       */
-      function handleBoxClick() {
+    // Give the box a fresh random color
+    box.css("background-color", getRandomColor());
 
+    // Calculate the base speed increase
+    var currentModifier = 3 * points + 10;
+    
+    // Every 3 clicks, give the speed a massive boost and change the background color
+    if (points % 3 === 0) {
+        currentModifier += 15; 
+        jQuery('.board').css('background-color', getRandomColor());
+    }
 
+    // Apply the new speed while preserving the direction the box was moving
+    speedX = speedX < 0 ? -currentModifier : currentModifier;
+    speedY = speedY < 0 ? -currentModifier : currentModifier;
+}
 
-
-      }
-
-
-
-    })();
+// ==========================================
+// WHAT HAPPENS WHEN YOU MISS THE BOX
+// ==========================================
+function handleBoardClick() {
+    // Track the miss
+    mistakes++;
+    
+    // Game over trigger at 59 misses
+    if (mistakes >= 59) {
+        alert("Game Over! You missed 59 times.");
+        
+        // Wipe the slate clean and reset all variables
+        points = 0;
+        mistakes = 0;
+        speedX = 10;
+        speedY = 10;
+        positionX = 0;
+        positionY = 0;
+        
+        // Reset the visuals back to original settings
+        changeBoxText(points);
+        box.css("background-color", "rgb(50, 25, 250)"); 
+        jQuery('.board').css('background-color', ''); 
+    }
+}
   </script>
 </body>
 
-</html>
+</html> }
