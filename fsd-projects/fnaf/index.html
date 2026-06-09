@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Parody Security Simulator - Timer Fixed</title>
+    <title>Parody Security Simulator - Complete Build</title>
     <style>
         body {
             background-color: #050505;
@@ -248,6 +248,7 @@
 
         .utility-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 4px; }
         .util-btn { background: #111; color: #666; border: 1px solid #222; padding: 6px 12px; font-size: 11px; cursor: pointer; font-family: inherit; border-radius: 4px; min-height: 35px; }
+        .util-btn.unmuted-state { background: #0a2515; color: #00ff66; border-color: #00ff66; font-weight: bold; }
 
         #message {
             position: absolute; top: 55px; left: 50%; transform: translateX(-50%);
@@ -460,6 +461,9 @@
           let maxModeActive = false;
           let maxModeBeaten = false;
           let customNightUnlocked = false; 
+          let lightOn = false;
+          let leftDoorClosed = false;
+          let rightDoorClosed = false;
 
           Object.values(aiSelectors).forEach(select => {
               for(let i=0; i<=20; i++) {
@@ -486,11 +490,19 @@
           }
 
           function renderStatus() {
-            // FIXED FORMATTER: Ensures 0 evaluates cleanly to 12, but numbers 1-6 show exactly as they are tracked!
             const displayHour = hour === 0 ? 12 : hour;
             nightTitle.textContent = customMode ? (maxModeActive ? "MAX MODE" : "CUSTOM SIM") : `NIGHT ${night}`;
             timeEl.textContent = `${displayHour} AM`;
             powerEl.textContent = Math.max(0, Math.floor(power)) + "%";
+            
+            if (phoneMuted) {
+                phoneMuteBtn.textContent = "Unmute Comms";
+                phoneMuteBtn.classList.add("unmuted-state");
+            } else {
+                phoneMuteBtn.textContent = "Mute Comms";
+                phoneMuteBtn.classList.remove("unmuted-state");
+            }
+
             updateCameraViews();
             updateRadarMap();
             saveGameState();
@@ -726,7 +738,17 @@
           toggleLight.addEventListener("click", () => { if (!running) return; lightOn = !lightOn; document.querySelector(".room").classList.toggle("light-on", lightOn); lightStateEl.textContent = lightOn ? "On" : "Off"; renderStatus(); });
           toggleLeftDoor?.addEventListener("click", () => { if (!running) return; leftDoorClosed = !leftDoorClosed; document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed); renderStatus(); });
           toggleRightDoor?.addEventListener("click", () => { if (!running) return; rightDoorClosed = !rightDoorClosed; document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed); renderStatus(); });
-          phoneMuteBtn?.addEventListener("click", () => { phoneMuted = true; phoneBubble.classList.add("hidden"); showMessage("Comms Muted."); });
+          
+          phoneMuteBtn?.addEventListener("click", () => { 
+             phoneMuted = !phoneMuted; 
+             if (phoneMuted) {
+                 phoneBubble.classList.add("hidden"); 
+                 showMessage("Comms Silenced."); 
+             } else {
+                 showMessage("Comms Active.");
+             }
+             renderStatus();
+          });
 
           function checkLose() {
             for (const a of anims) {
@@ -744,11 +766,7 @@
           function gameTick() {
             if (!running) return;
             seconds += 1;
-            
-            // Increments hours correctly based on standard intervals
-            if (seconds % 12 === 0) {
-                hour = Math.min(6, hour + 1);
-            }
+            if (seconds % 12 === 0) hour = Math.min(6, hour + 1);
 
             let drain = 0.05;
             if (lightOn) drain += 0.30;
