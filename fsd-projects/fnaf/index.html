@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parody Security Simulator - 8 Cam Vault Edition</title>
+    <title>Parody Security Simulator - Locked Custom Edition</title>
     <style>
         body {
             background-color: #050505;
@@ -98,7 +98,7 @@
             text-align: center;
         }
 
-        /* 8 Cam Map Layout Geometry */
+        /* Cam Map Geometry Layout */
         #map-stage { top: 10px; left: 75px; width: 110px; height: 50px; }
         #map-backstage { top: 10px; left: 10px; width: 55px; height: 75px; }
         #map-dining { top: 75px; left: 75px; width: 110px; height: 100px; }
@@ -166,9 +166,9 @@
             border: 1px solid #ffcc00 !important;
             font-weight: bold;
         }
-        .gold-btn:hover { background: #ffcc00 !important; color: #000 !important; }
+        .gold-btn:hover:not(:disabled) { background: #ffcc00 !important; color: #000 !important; }
 
-        /* --- CUSTOM NIGHT PANEL --- */
+        /* --- CUSTOM NIGHT PANEL (LOCKED FUNCTION) --- */
         #custom-config-box {
             background: #0d0d0d;
             border: 1px dashed #444;
@@ -179,6 +179,19 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            position: relative;
+        }
+        #custom-config-box.locked {
+            opacity: 0.35;
+        }
+        .lock-notice {
+            color: #ff3333;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            display: block;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
         }
         .ai-row {
             display: flex;
@@ -191,6 +204,9 @@
             background: #222; color: #fff; border: 1px solid #555;
             font-family: inherit; font-size: 11px; padding: 2px 4px;
             border-radius: 3px; width: 50px;
+        }
+        .ai-selector:disabled {
+            background: #111; color: #444; border-color: #222;
         }
 
         /* --- UI PANELS --- */
@@ -325,17 +341,17 @@
                 <button id="new-game-btn" class="menu-btn">Standard Run (Night <span id="menu-night">1</span>)</button>
                 <button id="continue-btn" class="menu-btn">Resume Saved Progress</button>
                 
-                <div id="custom-config-box">
-                    <div style="font-size:10px; text-align:center; color:#ffcc00; font-weight:bold; margin-bottom:4px;">CUSTOM MODIFIERS PANEL</div>
+                <div id="custom-config-box" class="locked">
+                    <div id="lock-text-banner" class="lock-notice">🔒 LOCKED: SURVIVE NIGHT 5 TO ACCESS</div>
                     
-                    <div class="ai-row"><span>🐰 Bouncer AI:</span><select id="ai-bouncer" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>🐔 Chirpy AI:</span><select id="ai-chirpy" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>🐻 Parody Bear AI:</span><select id="ai-parody" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>🦊 Bandit Fox AI:</span><select id="ai-bandit" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>👑 Golden Glitch AI:</span><select id="ai-glitch" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🐰 Bouncer AI:</span><select id="ai-bouncer" class="ai-selector" disabled></select></div>
+                    <div class="ai-row"><span>🐔 Chirpy AI:</span><select id="ai-chirpy" class="ai-selector" disabled></select></div>
+                    <div class="ai-row"><span>🐻 Parody Bear AI:</span><select id="ai-parody" class="ai-selector" disabled></select></div>
+                    <div class="ai-row"><span>🦊 Bandit Fox AI:</span><select id="ai-bandit" class="ai-selector" disabled></select></div>
+                    <div class="ai-row"><span>👑 Golden Glitch AI:</span><select id="ai-glitch" class="ai-selector" disabled></select></div>
                     
-                    <button id="custom-launch-btn" class="menu-btn" style="width:100%; margin:4px 0 0 0;">Launch Custom Configurations</button>
-                    <button id="golden-mode-btn" class="menu-btn gold-btn" style="width:100%; margin:4px 0 0 0;">🏆 MAX MODE (20/20/20/20/20)</button>
+                    <button id="custom-launch-btn" class="menu-btn" style="width:100%; margin:4px 0 0 0;" disabled>Launch Custom Configurations</button>
+                    <button id="golden-mode-btn" class="menu-btn gold-btn" style="width:100%; margin:4px 0 0 0;" disabled>🏆 MAX MODE (20/20/20/20/20)</button>
                 </div>
             </div>
 
@@ -436,7 +452,9 @@
           const restartBtn = document.getElementById("restart-btn");
           const victoryStar = document.getElementById("victory-star");
 
-          // Custom System Elements Hooks
+          // Custom Panel Elements & Hooks
+          const customConfigBox = document.getElementById("custom-config-box");
+          const lockTextBanner = document.getElementById("lock-text-banner");
           const customLaunchBtn = document.getElementById("custom-launch-btn");
           const goldenModeBtn = document.getElementById("golden-mode-btn");
           const aiSelectors = {
@@ -470,6 +488,7 @@
           let customMode = false;
           let maxModeActive = false;
           let maxModeBeaten = false;
+          let customNightUnlocked = false; // System lock tracker flag
 
           // Initial Setup Configuration Dropdowns
           Object.values(aiSelectors).forEach(select => {
@@ -481,13 +500,12 @@
               select.value = 0;
           });
 
-          // 8 Camera index pointers mapped to internal positions
           const anims = [
             { name: "Bouncer", pos: 0, path: [0, 1, 3, 5, 8], pathIdx: 0, moveChance: 0.15, type: "standard", level: 0, icon: "🐰" },
             { name: "Chirpy", pos: 0, path: [0, 1, 4, 6, 8], pathIdx: 0, moveChance: 0.12, type: "standard", level: 0, icon: "🐔" },
             { name: "Parody Bear", pos: 0, path: [0, 1, 4, 6, 8], pathIdx: 0, moveChance: 0.0, type: "stalker", level: 0, icon: "🐻" },
             { name: "Bandit Fox", pos: 2, path: [2, 1, 5, 8], pathIdx: 0, moveChance: 0.0, type: "rusher", level: 0, icon: "🦊", statusTicks: 0 },
-            { name: "Golden Glitch", pos: 7, path: [7, 8], pathIdx: 0, moveChance: 0.0, type: "glitch", level: 0, icon: "👑" }, // Starts inside Vault (7)
+            { name: "Golden Glitch", pos: 7, path: [7, 8], pathIdx: 0, moveChance: 0.0, type: "glitch", level: 0, icon: "👑" }, 
           ];
 
           const staticOverlay = document.getElementById("static-overlay");
@@ -508,6 +526,24 @@
             savePrefs();
           }
 
+          function checkCustomNightLockStatus() {
+              if (customNightUnlocked) {
+                  customConfigBox.classList.remove("locked");
+                  lockTextBanner.textContent = "🔓 CUSTOM MODIFIERS UNLOCKED";
+                  lockTextBanner.style.color = "#00ff66";
+                  customLaunchBtn.removeAttribute("disabled");
+                  goldenModeBtn.removeAttribute("disabled");
+                  Object.values(aiSelectors).forEach(select => select.removeAttribute("disabled"));
+              } else {
+                  customConfigBox.classList.add("locked");
+                  lockTextBanner.textContent = "🔒 LOCKED: SURVIVE NIGHT 5 TO ACCESS";
+                  lockTextBanner.style.color = "#ff3333";
+                  customLaunchBtn.setAttribute("disabled", "true");
+                  goldenModeBtn.setAttribute("disabled", "true");
+                  Object.values(aiSelectors).forEach(select => select.setAttribute("disabled", "true"));
+              }
+          }
+
           function updateRadarMap() {
             Object.values(dotPanels).forEach(panel => { if (panel) panel.innerHTML = ""; });
 
@@ -525,12 +561,12 @@
             });
           }
 
-          function getSavedState() { try { return JSON.parse(localStorage.getItem("parody-sim-save-v3")); } catch (e) { return null; } }
+          function getSavedState() { try { return JSON.parse(localStorage.getItem("parody-sim-locked-v1")); } catch (e) { return null; } }
           function hasSavedGame() { return !!getSavedState(); }
 
           function saveGameState() {
             if (!running) return;
-            localStorage.setItem("parody-sim-save-v3", JSON.stringify({
+            localStorage.setItem("parody-sim-locked-v1", JSON.stringify({
               night, hour, power, currentCam, lightOn, leftDoorClosed, rightDoorClosed, seconds, customMode, maxModeActive,
               anims: anims.map(a => ({ name: a.name, pos: a.pos, pathIdx: a.pathIdx, level: a.level }))
             }));
@@ -552,10 +588,12 @@
             return true;
           }
 
-          function getPrefs() { try { return JSON.parse(localStorage.getItem("parody-sim-prefs-v3")) || {}; } catch (e) { return {}; } }
-          function savePrefs() { try { localStorage.setItem("parody-sim-prefs-v3", JSON.stringify({ phoneMuted, maxModeBeaten })); } catch (e) {} }
+          function getPrefs() { try { return JSON.parse(localStorage.getItem("parody-prefs-locked-v1")) || {}; } catch (e) { return {}; } }
+          function savePrefs() { try { localStorage.setItem("parody-prefs-locked-v1", JSON.stringify({ phoneMuted, maxModeBeaten, customNightUnlocked })); } catch (e) {} }
 
           function startNight(startNightNumber = 1, isCustom = false, customLevels = null) {
+            if (isCustom && !customNightUnlocked) return; // Prevention failsafe
+
             customMode = isCustom; night = startNightNumber; hour = 0; seconds = 0; power = 100; currentCam = 0;
             lightOn = false; leftDoorClosed = false; rightDoorClosed = false;
             
@@ -595,7 +633,7 @@
 
             if (maxModeActive) showMessage("🚨 MODE 20/20/20/20/20 INITIATED 🚨");
             else if (isCustom) showMessage("Custom Sim Parameters Online.");
-            else showPhoneBubble("8 cameras linked. Be extremely careful when pulling up CAM 8!");
+            else showPhoneBubble("System active. Keep an eye on those doors.");
           }
 
           function setStandardDifficulty() {
@@ -620,7 +658,6 @@
             if (active) active.classList.remove("hidden");
             camBtns.forEach(b => b.classList.toggle("active", Number(b.dataset.cam) === currentCam));
 
-            // Instant trigger check: Viewing Cam 8 while Glitch is sitting inside it
             if (currentCam === 7) {
                 const glitch = anims.find(a => a.type === "glitch");
                 if (glitch && glitch.pos === 7 && glitch.level > 0) {
@@ -637,6 +674,7 @@
           }
 
           function openMainMenu() {
+            checkCustomNightLockStatus();
             if (mainMenu) mainMenu.classList.remove("hidden");
             running = false; 
             if (menuNightEl) menuNightEl.textContent = night;
@@ -653,8 +691,6 @@
               const visitors = anims.filter(a => {
                  if (!customMode && night < 3 && (a.type === "stalker" || a.type === "rusher" || a.type === "glitch")) return false;
                  if (customMode && a.level === 0) return false;
-                 
-                 // Evaluate room positions relative to map arrays
                  return a.pos === i;
               }).map(a => a.name);
 
@@ -687,6 +723,7 @@
           }
 
           customLaunchBtn.addEventListener("click", () => {
+             if(!customNightUnlocked) return;
              startNight(6, true, {
                 Bouncer: Number(aiSelectors.Bouncer.value),
                 Chirpy: Number(aiSelectors.Chirpy.value),
@@ -697,6 +734,7 @@
           });
 
           goldenModeBtn.addEventListener("click", () => {
+             if(!customNightUnlocked) return;
              Object.values(aiSelectors).forEach(s => s.value = 20);
              startNight(7, true, { Bouncer: 20, Chirpy: 20, Parody: 20, Bandit: 20, Glitch: 20 });
           });
@@ -706,7 +744,6 @@
              currentCam = Number(btn.dataset.cam); showActiveCamera(); power -= 0.08; renderStatus();
           }));
 
-          // Keyboard Shortcuts Listener for [1-8] keys
           window.addEventListener("keydown", (e) => {
               if (!running) return;
               const keyNum = parseInt(e.key);
@@ -756,21 +793,17 @@
               if (customMode && a.level === 0) { continue; }
               if (!customMode && night < 3 && (a.type === "stalker" || a.type === "rusher" || a.type === "glitch")) { continue; }
 
-              // Dynamic Golden Glitch Staging Loop
               if (a.type === "glitch") {
                   if (a.pos === 7) {
-                      // Check if monitor is already observing Cam 8 when checking movement ticks
                       if (currentCam === 7) { triggerGlitchJumpscare(); return; }
-                      
                       if (Math.random() < (a.moveChance + 0.05)) {
-                          a.pos = 8; // Slip into the office silently
+                          a.pos = 8;
                           showMessage("An eerie code anomaly entered the office area...");
                       }
                   }
                   continue;
               }
 
-              // Logic for Hallways Right outside the Office (Bouncer: 5, Chirpy & Parody: 6)
               if (a.pos === 5 || a.pos === 6) {
                  let doorClosed = (a.pos === 5) ? leftDoorClosed : rightDoorClosed;
                  if (doorClosed) {
@@ -781,7 +814,6 @@
                  continue;
               }
 
-              // Bandit Fox (Pirate's Cove Rusher mechanic)
               if (a.type === "rusher") {
                  if (currentCam === 2) a.statusTicks = 0; else a.statusTicks = Math.min(6, a.statusTicks + 1);
                  if (Math.random() < (a.moveChance + a.statusTicks * 0.04)) {
@@ -795,7 +827,6 @@
                  continue;
               }
 
-              // Path Stepper Calculation
               if (Math.random() < (a.moveChance + (hour * 0.01))) {
                   if (a.pathIdx < a.path.length - 1) {
                       a.pathIdx++;
@@ -806,9 +837,20 @@
 
             if (hour >= 6) {
               running = false;
-              if (maxModeActive) { maxModeBeaten = true; showMessage("👑 PARODY PLATINUM STATUS EARNED! 👑"); }
-              else if (night < 5) { night += 1; showMessage(`Shift Complete! Promoted to Night ${night}`); startNight(night, false); return; }
-              else { showMessage("Standard Shifts Victorious!"); }
+              if (maxModeActive) { 
+                  maxModeBeaten = true; 
+                  showMessage("👑 PARODY PLATINUM STATUS EARNED! 👑"); 
+              } else if (!customMode && night === 5) {
+                  customNightUnlocked = true;
+                  showMessage("🔓 NIGHT 5 CLEARED - CUSTOM NIGHT UNLOCKED!");
+              } else if (!customMode && night < 5) { 
+                  night += 1; 
+                  showMessage(`Shift Complete! Promoted to Night ${night}`); 
+                  startNight(night, false); 
+                  return; 
+              } else { 
+                  showMessage("Standard Shifts Victorious!"); 
+              }
               openMainMenu(); return;
             }
 
@@ -816,11 +858,12 @@
             checkLose();
           }
 
-          // Initialize Game State Preferences
+          // Initialize Preferences and Memory System
           (() => {
             const p = getPrefs();
             phoneMuted = !!p.phoneMuted;
             maxModeBeaten = !!p.maxModeBeaten;
+            customNightUnlocked = !!p.customNightUnlocked;
             openMainMenu();
           })();
           
