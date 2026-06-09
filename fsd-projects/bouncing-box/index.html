@@ -9,17 +9,22 @@
     body {
       margin: 0;
       background-color: #111;
+      overflow: hidden; 
+      font-family: sans-serif;
     }
 
-    /* Styling for the target box */
     .box {
       width: 70px;
       height: 70px;
-      background-color: rgb(50, 25, 250);
-      font-size: 300%;
+      background-image: url('https://static.wikia.nocookie.net/jujutsu-kaisen/images/4/43/Satoru_Gojo_%28JUMP_31-2023%29.png'); 
+      background-size: cover;
+      background-position: center;
+      background-color: rgb(50, 25, 250); 
+      font-size: 200%; 
       text-align: center;
       line-height: 70px;
       color: white;
+      font-weight: bold;
       user-select: none;
       display: block;
       position: absolute;
@@ -27,18 +32,88 @@
       left: 0px;
       border-radius: 8px;
       cursor: pointer;
+      z-index: 10; 
     }
 
-    /* The screen background */
+    .trail-particle {
+      width: 70px;
+      height: 70px;
+      background-color: rgba(0, 255, 100, 0.6); 
+      position: absolute;
+      border-radius: 8px;
+      pointer-events: none; 
+      z-index: 1; 
+      transition: opacity 0.3s ease, transform 0.3s ease; 
+    }
+
     .board {
       height: 100vh;
       transition: background-color 0.3s ease;
+    }
+
+    .miss-counter {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #ff4444;
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      user-select: none;
+      pointer-events: none; 
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px 15px;
+      border-radius: 5px;
+      border: 1px solid #ff4444;
+      z-index: 20; 
+    }
+
+    .speed-container {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 200px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #00ff66;
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 20;
+    }
+
+    .speed-label {
+      color: #00ff66;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .speed-bar-bg {
+      width: 100%;
+      height: 15px;
+      background: #222;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .speed-bar-fill {
+      width: 10%;
+      height: 100%;
+      background: #00ff66;
+      transition: width 0.2s ease;
     }
   </style>
 </head>
 
 <body class="board" onclick="handleBoardClick()">
 
+  <div class="speed-container">
+    <div class="speed-label">Speed: 10</div>
+    <div class="speed-bar-bg">
+      <div class="speed-bar-fill"></div>
+    </div>
+  </div>
+
+  <div class="miss-counter">Misses: 0 / 69</div>
   <div class="box">?</div>
 
   <script>
@@ -46,47 +121,39 @@
       "use strict";
       /* global jQuery */
 
-      // Setting up the basic elements and screen width
       var box = jQuery(".box"); 
       var board = jQuery(".board"); 
+      var missCounterElement = jQuery(".miss-counter"); 
+      var speedLabel = jQuery(".speed-label");
+      var speedFill = jQuery(".speed-bar-fill");
       var boardWidth = board.width(); 
 
-      // Recalculates the screen width if the user resizes their window
       jQuery(window).on("resize", function () {
         boardWidth = board.width();
       });
 
-      // Runs the update function 20 times every second to keep things moving
-      setInterval(update, 50);
+      var interval = setInterval(update, 50);
 
-      // Links our success function to the box when clicked
       box.on("click", handleBoxClick);
 
-      // Simple tool to swap out the text inside the box
       function changeBoxText(newText) {
         box.text(newText);
       }
 
-      // ==========================================
-      // GAME VARIABLES
-      // ==========================================
-      var positionX = 0;   // Where the box is horizontally
-      var positionY = 100; // Where the box is vertically
-      var points = 0;      // Current score
-      var speedX = 10;     // Current horizontal speed/direction
-      var speedY = 10;     // Current vertical speed/direction
-      var mistakes = 0;    // Number of missed clicks
+      var positionX = 0;   
+      var positionY = 100; 
+      var points = 0;      
+      var speedX = 10;     
+      var speedY = 10;     
+      var mistakes = 0;    
 
-      // Grabs the total height of the browser screen
       var boardHeight = jQuery(window).height(); 
 
-      // Moves the box around using custom X and Y coordinates
       function moveBoxTo(newPositionX, newPositionY) {
           box.css("left", newPositionX);
           box.css("top", newPositionY); 
       }
 
-      // Generates a fully randomized color
       function getRandomColor() {
           var r = Math.floor(Math.random() * 256);
           var g = Math.floor(Math.random() * 256);
@@ -94,15 +161,38 @@
           return "rgb(" + r + ", " + g + ", " + b + ")";
       }
 
-      // ==========================================
-      // MAIN MOVEMENT LOOP
-      // ==========================================
+      function endGame() {
+          clearInterval(interval);
+      }
+
+      function createTrail(x, y) {
+          var particle = jQuery("<div>").addClass("trail-particle");
+          
+          particle.css({
+              left: x + "px",
+              top: y + "px"
+          });
+          
+          board.append(particle);
+          
+          setTimeout(function() {
+              particle.css({
+                  "opacity": "0",
+                  "transform": "scale(0.5)" 
+              });
+          }, 50);
+          
+          setTimeout(function() {
+              particle.remove();
+          }, 350);
+      }
+
       function update() {
-          // Push the box forward on both axes
+          createTrail(positionX, positionY);
+
           positionX = positionX + speedX;
           positionY = positionY + speedY;
 
-          // Bounces the box back if it touches the right or left walls
           if (positionX > (boardWidth - 70)) {
               speedX *= -1; 
           }
@@ -110,7 +200,6 @@
               speedX *= -1; 
           }
 
-          // Bounces the box back if it touches the top or bottom walls
           if (positionY > (boardHeight - 70)) {
               speedY *= -1; 
           }
@@ -118,71 +207,60 @@
               speedY *= -1; 
           }
 
-          // Redraws the box at the coordinates we just calculated
           moveBoxTo(positionX, positionY);
       }
 
-      // ==========================================
-      // SUCCESSFUL CLICKS (HITTING THE BOX)
-      // ==========================================
+      function updateSpeedUI(currentSpeed) {
+          speedLabel.text("Speed: " + currentSpeed);
+          var maxExpectedSpeed = 100; 
+          var percentage = (currentSpeed / maxExpectedSpeed) * 100;
+          if (percentage > 100) percentage = 100;
+          speedFill.css("width", percentage + "%");
+      }
+
       function handleBoxClick(event) {
-          // Keeps the click from triggering a background miss at the same time
           if (event) {
               event.stopPropagation();
           }
 
-          // Give them a point and update the score on the box
           points++;
           changeBoxText(points);
 
-          // Teleport the box to a completely random spot on the screen
           positionX = Math.random() * (boardWidth - 70);
           positionY = Math.random() * (boardHeight - 70);
 
-          // Swap out the box color for a random one
           box.css("background-color", getRandomColor());
 
-          // Gradually speed up the box using our linear equation
           var currentModifier = 3 * points + 10;
           
-          // Every 3 hits, inject an extra burst of speed and flash the background color
           if (points % 3 === 0) {
               currentModifier += 15; 
               board.css('background-color', getRandomColor());
           }
 
-          // Apply the new speed without messing up the direction the box was already headed
           speedX = speedX < 0 ? -currentModifier : currentModifier;
           speedY = speedY < 0 ? -currentModifier : currentModifier;
+
+          updateSpeedUI(currentModifier);
       }
 
-      // ==========================================
-      // MISSED CLICKS (HITTING THE BACKGROUND)
-      // ==========================================
       window.handleBoardClick = function() {
-          // Log the miss
           mistakes++;
           
-          // Trigger a game over if they miss 59 times
-          if (mistakes >= 59) {
-              alert("Game Over! You missed 59 times.");
+          // Updated string template to show max 69
+          missCounterElement.text("Misses: " + mistakes + " / 69");
+          
+          // Updated conditional limit check to 69
+          if (mistakes >= 69) {
+              endGame(); 
               
-              // Reset all of our tracking statistics back to the beginning
-              points = 0;
-              mistakes = 0;
-              speedX = 10;
-              speedY = 10;
-              positionX = 0;
-              positionY = 100;
+              alert("Game Over! You missed 69 times. Final Score: " + points);
               
-              // Reset all colors and text back to original settings
-              changeBoxText("?");
-              box.css("background-color", "rgb(50, 25, 250)"); 
-              board.css('background-color', ''); 
+              location.reload();
           }
       };
 
-    })(); // Safely wraps up our outer template logic
+    })();
   </script>
 </body>
 
