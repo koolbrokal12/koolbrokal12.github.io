@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Five Nights at Coder's - 20/20/20/20/20 Edition</title>
+    <title>Parody Security Simulator - 8 Cam Vault Edition</title>
     <style>
         body {
             background-color: #050505;
@@ -34,8 +34,8 @@
 
         #game-screen {
             position: relative;
-            width: 500px;
-            height: 620px;
+            width: 520px;
+            height: 640px;
             background: #111;
             border: 4px solid #222;
             border-radius: 8px;
@@ -49,8 +49,8 @@
 
         /* --- RADAR MAP MONITOR PANEL --- */
         #radar-panel {
-            width: 280px;
-            height: 620px;
+            width: 300px;
+            height: 640px;
             background: #0a0e0a;
             border: 4px solid #1a2e1a;
             border-radius: 8px;
@@ -74,8 +74,8 @@
 
         #map-grid {
             position: relative;
-            width: 240px;
-            height: 340px;
+            width: 260px;
+            height: 360px;
             background: rgba(0, 20, 5, 0.6);
             border: 2px solid #00ff66;
             border-radius: 4px;
@@ -87,28 +87,35 @@
             border: 1px dashed #00ff66;
             background: rgba(0, 40, 10, 0.3);
             color: #00ff66;
-            font-size: 10px;
+            font-size: 9px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            padding-top: 5px;
+            padding-top: 3px;
             box-sizing: border-box;
             font-weight: bold;
+            text-align: center;
         }
 
-        #map-stage { top: 15px; left: 20px; width: 200px; height: 70px; }
-        #map-storage { top: 100px; left: 20px; width: 90px; height: 90px; }
-        #map-hallway { top: 100px; left: 130px; width: 90px; height: 140px; }
-        #map-office { bottom: 15px; left: 65px; width: 110px; height: 70px; border: 2px solid #ff3333; color: #ff3333; background: rgba(40, 0, 0, 0.3); }
+        /* 8 Cam Map Layout Geometry */
+        #map-stage { top: 10px; left: 75px; width: 110px; height: 50px; }
+        #map-backstage { top: 10px; left: 10px; width: 55px; height: 75px; }
+        #map-dining { top: 75px; left: 75px; width: 110px; height: 100px; }
+        #map-cove { top: 100px; left: 10px; width: 55px; height: 75px; }
+        #map-restrooms { top: 75px; left: 195px; width: 55px; height: 75px; }
+        #map-lhall { top: 190px; left: 25px; width: 45px; height: 100px; }
+        #map-rhall { top: 190px; left: 190px; width: 45px; height: 100px; }
+        #map-vault { top: 300px; left: 10px; width: 65px; height: 50px; border: 1px dotted #ffcc00; color: #ffcc00; }
+        #map-office { bottom: 10px; left: 85px; width: 90px; height: 60px; border: 2px solid #ff3333; color: #ff3333; background: rgba(40, 0, 0, 0.3); }
 
         .map-dots {
             display: flex;
-            gap: 4px;
+            gap: 2px;
             flex-wrap: wrap;
             justify-content: center;
-            margin-top: 5px;
-            font-size: 16px;
+            margin-top: 3px;
+            font-size: 14px;
         }
 
         #legend {
@@ -119,7 +126,7 @@
             color: #88af88;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
         .legend-item { display: flex; align-items: center; gap: 8px; }
 
@@ -133,21 +140,21 @@
             overflow-y: auto;
         }
         #main-menu.hidden { display: none !important; }
-        .menu-title { font-family: 'Impact', sans-serif; font-size: 32px; color: #ff3333; margin-bottom: 2px; }
-        .menu-subtitle { font-size: 12px; color: #666; margin-bottom: 15px; }
+        .menu-title { font-family: 'Impact', sans-serif; font-size: 28px; color: #ff3333; margin-bottom: 2px; letter-spacing: 1px; }
+        .menu-subtitle { font-size: 11px; color: #666; margin-bottom: 12px; }
         
         .star-rank {
             color: #ffcc00;
             font-size: 22px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             text-shadow: 0 0 8px #ffcc00;
             display: none;
         }
 
         .menu-btn {
             background: #151515; color: #aaa; border: 1px solid #333;
-            padding: 8px 16px; margin: 4px; width: 240px; cursor: pointer;
-            font-family: inherit; font-size: 13px; transition: 0.2s;
+            padding: 8px 16px; margin: 4px; width: 250px; cursor: pointer;
+            font-family: inherit; font-size: 12px; transition: 0.2s;
             border-radius: 3px;
         }
         .menu-btn:hover:not(:disabled) { background: #ff3333; color: #fff; border-color: #ff3333; }
@@ -166,39 +173,34 @@
             background: #0d0d0d;
             border: 1px dashed #444;
             padding: 10px;
-            margin-top: 10px;
-            width: 260px;
+            margin-top: 5px;
+            width: 270px;
             border-radius: 4px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
         .ai-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #bbb;
         }
         .ai-selector {
-            background: #222;
-            color: #fff;
-            border: 1px solid #555;
-            font-family: inherit;
-            font-size: 11px;
-            padding: 2px 5px;
-            border-radius: 3px;
-            width: 50px;
+            background: #222; color: #fff; border: 1px solid #555;
+            font-family: inherit; font-size: 11px; padding: 2px 4px;
+            border-radius: 3px; width: 50px;
         }
 
-        /* --- HUD & PLAYSCRIPTS --- */
+        /* --- UI PANELS --- */
         .hud {
             display: flex;
             justify-content: space-between;
             background: rgba(0,0,0,0.4);
-            padding: 8px 12px;
+            padding: 6px 12px;
             border-radius: 4px;
-            font-size: 15px;
+            font-size: 14px;
             border: 1px solid #222;
         }
         #time { color: #00ffcc; font-weight: bold; }
@@ -208,31 +210,31 @@
             display: flex;
             flex-direction: column;
             flex-grow: 1;
-            margin: 12px 0;
-            gap: 8px;
+            margin: 10px 0;
+            gap: 6px;
         }
 
         #player-office {
-            background: #1c1c1c; border: 2px solid #333; padding: 8px;
+            background: #1c1c1c; border: 2px solid #333; padding: 6px;
             text-align: center; font-weight: bold; color: #ff5555;
-            text-transform: uppercase; border-radius: 4px; font-size: 14px;
+            text-transform: uppercase; border-radius: 4px; font-size: 13px;
         }
 
         #camera-view {
-            position: relative; height: 180px; background: #080808;
+            position: relative; height: 160px; background: #080808;
             border: 2px solid #222; border-radius: 4px;
             display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
-        .camera { width: 100%; height: 100%; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
+        .camera { width: 100%; height: 100%; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
         .camera.hidden { display: none !important; }
-        .camera-title { font-size: 13px; color: #888; position: absolute; top: 10px; left: 10px; }
-        .camera-visitors { font-size: 12px; color: #fff; margin-bottom: 10px; }
-        .camera-overlay { display: flex; gap: 8px; font-size: 22px; margin-top: 5px; }
+        .camera-title { font-size: 12px; color: #aaa; position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 2px 5px; border-radius: 2px;}
+        .camera-visitors { font-size: 12px; color: #fff; margin-top: 10px; }
 
-        .camera-controls { display: flex; justify-content: center; gap: 8px; }
+        .camera-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
         .cam-btn {
             background: #222; color: #888; border: 1px solid #444;
-            padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 12px; border-radius: 3px;
+            padding: 5px; cursor: pointer; font-family: inherit; font-size: 11px; border-radius: 3px;
+            text-align: center;
         }
         .cam-btn.active { background: #00ffcc; color: #000; border-color: #00ffcc; font-weight: bold; }
 
@@ -243,7 +245,7 @@
         .office-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .control-btn {
             background: #251010; color: #ff6666; border: 1px solid #552222;
-            padding: 8px; font-family: inherit; cursor: pointer; font-size: 12px;
+            padding: 8px; font-family: inherit; cursor: pointer; font-size: 11px;
             border-radius: 4px; text-transform: uppercase;
         }
         .control-btn:hover { background: #401a1a; }
@@ -251,19 +253,20 @@
         #toggle-light:hover { background: #40401a; }
 
         .utility-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-        .util-btn { background: #111; color: #666; border: 1px solid #222; padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
+        .util-btn { background: #111; color: #666; border: 1px solid #222; padding: 4px 8px; font-size: 11px; cursor: pointer; font-family: inherit; }
         .util-btn:hover { color: #fff; border-color: #444; }
 
         #message {
-            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 55px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.9); border: 1px solid #ff3333; color: #ff3333;
-            padding: 8px 16px; font-size: 12px; z-index: 50; border-radius: 4px; text-align: center; max-width: 80%;
+            padding: 6px 12px; font-size: 11px; z-index: 50; border-radius: 4px; text-align: center; max-width: 80%;
         }
         #message.hidden { display: none; }
+        
         #phone-bubble {
             position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.85); border: 1px solid #00ffcc; color: #fff;
-            padding: 10px; font-size: 11px; z-index: 40; border-radius: 4px; text-align: center; width: 85%; box-sizing: border-box;
+            padding: 8px; font-size: 11px; z-index: 40; border-radius: 4px; text-align: center; width: 85%; box-sizing: border-box;
         }
         #phone-bubble.hidden { display: none; }
 
@@ -272,9 +275,10 @@
             background: #000; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         #jumpscare.hidden { display: none !important; }
-        #jumpscare-text { font-family: 'Impact', sans-serif; font-size: 40px; color: #ff0000; letter-spacing: 4px; animation: shake 0.1s infinite; text-align: center; }
+        #jumpscare-text { font-family: 'Impact', sans-serif; font-size: 36px; color: #ff0000; letter-spacing: 3px; animation: shake 0.1s infinite; text-align: center; }
         #end-controls { position: absolute; bottom: 40px; display: flex; gap: 10px; z-index: 95; }
         #end-controls.hidden { display: none !important; }
+        
         #static-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.15); opacity: 0; pointer-events: none; z-index: 20;
@@ -305,7 +309,7 @@
             <div id="phone-bubble" class="hidden"></div>
 
             <div id="jumpscare" class="hidden" aria-hidden="true">
-                <div id="jumpscare-text">JUMPSCARE</div>
+                <div id="jumpscare-text">GAME OVER</div>
                 <div id="end-controls" class="hidden">
                     <button id="restart-btn" class="menu-btn" style="width: 120px;">Try Again</button>
                     <button id="menu-btn" class="menu-btn" style="width: 120px;">Main Menu</button>
@@ -313,25 +317,25 @@
             </div>
 
             <div id="main-menu">
-                <div class="menu-title">FIVE NIGHTS AT CODER'S</div>
-                <div class="menu-subtitle">Night Control Terminal Interface</div>
+                <div class="menu-title">8-CAM PARODY ENTERTAINMENT</div>
+                <div class="menu-subtitle">Copyright-Safe Security Simulator Platform</div>
                 
                 <div class="star-rank" id="victory-star">★</div>
 
-                <button id="new-game-btn" class="menu-btn">Standard Mode (Night <span id="menu-night">1</span>)</button>
-                <button id="continue-btn" class="menu-btn">Resume Progress</button>
+                <button id="new-game-btn" class="menu-btn">Standard Run (Night <span id="menu-night">1</span>)</button>
+                <button id="continue-btn" class="menu-btn">Resume Saved Progress</button>
                 
                 <div id="custom-config-box">
-                    <div style="font-size:11px; text-align:center; color:#ffcc00; font-weight:bold; margin-bottom:4px;">CUSTOM NIGHT LEVEL SELECTOR</div>
+                    <div style="font-size:10px; text-align:center; color:#ffcc00; font-weight:bold; margin-bottom:4px;">CUSTOM MODIFIERS PANEL</div>
                     
-                    <div class="ai-row"><span>🐰 Bonnie AI:</span><select id="ai-bonnie" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>🐔 Chica AI:</span><select id="ai-chica" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>🐻 Freddy AI:</span><select id="ai-freddy" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>🦊 Foxy AI:</span><select id="ai-foxy" class="ai-selector"></select></div>
-                    <div class="ai-row"><span>👑 G. Freddy AI:</span><select id="ai-golden" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🐰 Bouncer AI:</span><select id="ai-bouncer" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🐔 Chirpy AI:</span><select id="ai-chirpy" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🐻 Parody Bear AI:</span><select id="ai-parody" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🦊 Bandit Fox AI:</span><select id="ai-bandit" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>👑 Golden Glitch AI:</span><select id="ai-glitch" class="ai-selector"></select></div>
                     
-                    <button id="custom-launch-btn" class="menu-btn" style="width:100%; margin:4px 0 0 0;">Launch Custom Levels</button>
-                    <button id="golden-mode-btn" class="menu-btn gold-btn" style="width:100%; margin:4px 0 0 0;">🏆 GOLDEN FREDDY (20/20/20/20/20)</button>
+                    <button id="custom-launch-btn" class="menu-btn" style="width:100%; margin:4px 0 0 0;">Launch Custom Configurations</button>
+                    <button id="golden-mode-btn" class="menu-btn gold-btn" style="width:100%; margin:4px 0 0 0;">🏆 MAX MODE (20/20/20/20/20)</button>
                 </div>
             </div>
 
@@ -341,65 +345,67 @@
             </div>
 
             <div id="workspace">
-                <div id="player-office" class="room">Office Room</div>
+                <div id="player-office" class="room">Office Center Secure</div>
 
                 <div id="camera-view">
-                    <div class="camera" data-cam="0">
-                        <div class="camera-title">CAM 1: Storage Closet</div>
-                        <div class="camera-visitors">Visitors: None</div>
-                        <div class="camera-overlay"></div>
-                    </div>
-                    <div class="camera hidden" data-cam="1">
-                        <div class="camera-title">CAM 2: Hallway Corridor</div>
-                        <div class="camera-visitors">Visitors: None</div>
-                        <div class="camera-overlay"></div>
-                    </div>
-                    <div class="camera hidden" data-cam="2">
-                        <div class="camera-title">CAM 3: Main Assembly Stage</div>
-                        <div class="camera-visitors">Visitors: None</div>
-                        <div class="camera-overlay"></div>
-                    </div>
+                    <div class="camera" data-cam="0"><div class="camera-title">CAM 1: Main Stage</div><div class="camera-visitors">Status Check...</div></div>
+                    <div class="camera hidden" data-cam="1"><div class="camera-title">CAM 2: Dining Area</div><div class="camera-visitors">Status Check...</div></div>
+                    <div class="camera hidden" data-cam="2"><div class="camera-title">CAM 3: Pirate's Cove</div><div class="camera-visitors">Status Check...</div></div>
+                    <div class="camera hidden" data-cam="3"><div class="camera-title">CAM 4: Backstage Storage</div><div class="camera-visitors">Status Check...</div></div>
+                    <div class="camera hidden" data-cam="4"><div class="camera-title">CAM 5: Restrooms</div><div class="camera-visitors">Status Check...</div></div>
+                    <div class="camera hidden" data-cam="5"><div class="camera-title">CAM 6: Left Hallway Corridor</div><div class="camera-visitors">Status Check...</div></div>
+                    <div class="camera hidden" data-cam="6"><div class="camera-title">CAM 7: Right Hallway Corridor</div><div class="camera-visitors">Status Check...</div></div>
+                    <div class="camera hidden" data-cam="7"><div class="camera-title" style="color:#ffcc00; font-weight:bold;">CAM 8: The Glitch Vault ⚠️</div><div class="camera-visitors" style="color:#ffcc00;">Corrupted Session Feed...</div></div>
                 </div>
 
                 <div class="camera-controls">
                     <button class="cam-btn active" data-cam="0">Cam 1</button>
                     <button class="cam-btn" data-cam="1">Cam 2</button>
                     <button class="cam-btn" data-cam="2">Cam 3</button>
+                    <button class="cam-btn" data-cam="3">Cam 4</button>
+                    <button class="cam-btn" data-cam="4">Cam 5</button>
+                    <button class="cam-btn" data-cam="5">Cam 6</button>
+                    <button class="cam-btn" data-cam="6">Cam 7</button>
+                    <button class="cam-btn" data-cam="7" style="color:#ffcc00; border-color:#554400;">Cam 8</button>
                 </div>
             </div>
 
             <div class="office-controls">
                 <button id="toggle-left-door" class="control-btn">Left Door <br><span id="left-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
-                <button id="toggle-light" class="control-btn">Office Flashlight <br><span id="light-state" style="font-size:10px; opacity:0.7;">Off</span></button>
+                <button id="toggle-light" class="control-btn">Flashlight <br><span id="light-state" style="font-size:10px; opacity:0.7;">Off</span></button>
                 <button id="toggle-right-door" class="control-btn">Right Door <br><span id="right-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
             </div>
 
             <div class="utility-row">
                 <div>
-                    <button id="phone-call-btn" class="util-btn">Replay Audio</button>
-                    <button id="phone-mute-btn" class="util-btn">Mute Audio</button>
+                    <button id="phone-mute-btn" class="util-btn">Mute Alerts</button>
                 </div>
-                <div style="font-size: 10px; color: #444;">[1-3] Cams | [L] Light | [D] Doors</div>
+                <div style="font-size: 9px; color: #444;">[1-8] Select Cam feeds automatically.</div>
             </div>
         </div>
 
         <div id="radar-panel">
-            <div class="radar-title">LIVE RADAR TRACKER</div>
+            <div class="radar-title">EXPANDED RADAR MATRIX</div>
             
             <div id="map-grid">
-                <div class="map-room" id="map-stage">STAGE (CAM 3)<div class="map-dots" id="dots-stage"></div></div>
-                <div class="map-room" id="map-storage">STORAGE (CAM 1)<div class="map-dots" id="dots-storage"></div></div>
-                <div class="map-room" id="map-hallway">HALL (CAM 2)<div class="map-dots" id="dots-hallway"></div></div>
-                <div class="map-room" id="map-office">OFFICE ROOM<div class="map-dots" id="dots-office"></div></div>
+                <div class="map-room" id="map-stage">STAGE<br>(CAM 1)<div class="map-dots" id="dots-stage"></div></div>
+                <div class="map-room" id="map-backstage">B.STAGE<br>(CAM 4)<div class="map-dots" id="dots-backstage"></div></div>
+                <div class="map-room" id="map-dining">DINING CORNER<br>(CAM 2)<div class="map-dots" id="dots-dining"></div></div>
+                <div class="map-room" id="map-cove">P.COVE<br>(CAM 3)<div class="map-dots" id="dots-cove"></div></div>
+                <div class="map-room" id="map-restrooms">RESTROOMS<br>(CAM 5)<div class="map-dots" id="dots-restrooms"></div></div>
+                <div class="map-room" id="map-lhall">L.HALL<br>(CAM 6)<div class="map-dots" id="dots-lhall"></div></div>
+                <div class="map-room" id="map-rhall">R.HALL<br>(CAM 7)<div class="map-dots" id="dots-rhall"></div></div>
+                <div class="map-room" id="map-vault">VAULT<br>(CAM 8)<div class="map-dots" id="dots-vault"></div></div>
+                <div class="map-room" id="map-office">OFFICE BAY<div class="map-dots" id="dots-office"></div></div>
             </div>
 
             <div id="legend">
-                <div style="font-weight: bold; margin-bottom: 3px; color:#00ff66;">RADAR TRACKING KEY:</div>
-                <div class="legend-item"><span>🐰</span> Bonnie (Active Night 1+)</div>
-                <div class="legend-item"><span>🐔</span> Chica (Active Night 1+)</div>
-                <div class="legend-item"><span>🐻</span> Freddy (Active Night 3+)</div>
-                <div class="legend-item"><span>🦊</span> Foxy (Active Night 3+)</div>
-                <div class="legend-item"><span>👑</span> Golden Freddy (Rare, Night 3+)</div>
+                <div style="font-weight: bold; margin-bottom: 2px; color:#00ff66; font-size:10px;">RADAR TRACKING KEY:</div>
+                <div class="legend-item"><span>🐰</span> Bouncer (Active Night 1+)</div>
+                <div class="legend-item"><span>🐔</span> Chirpy (Active Night 1+)</div>
+                <div class="legend-item"><span>🐻</span> Parody Bear (Active Night 3+)</div>
+                <div class="legend-item"><span>🦊</span> Bandit Fox (Active Night 3+)</div>
+                <div class="legend-item"><span>👑</span> Golden Glitch (Prepares in CAM 8!)</div>
             </div>
         </div>
 
@@ -424,29 +430,35 @@
           const newGameBtn = document.getElementById("new-game-btn");
           const continueBtn = document.getElementById("continue-btn");
           const menuNightEl = document.getElementById("menu-night");
-          const phoneCallBtn = document.getElementById("phone-call-btn");
           const phoneMuteBtn = document.getElementById("phone-mute-btn");
           const phoneBubble = document.getElementById("phone-bubble");
           const menuBtn = document.getElementById("menu-btn");
           const restartBtn = document.getElementById("restart-btn");
           const victoryStar = document.getElementById("victory-star");
 
-          // Custom Night Inputs Hooks
+          // Custom System Elements Hooks
           const customLaunchBtn = document.getElementById("custom-launch-btn");
           const goldenModeBtn = document.getElementById("golden-mode-btn");
           const aiSelectors = {
-             Bonnie: document.getElementById("ai-bonnie"),
-             Chica: document.getElementById("ai-chica"),
-             Freddy: document.getElementById("ai-freddy"),
-             Foxy: document.getElementById("ai-foxy"),
-             Golden: document.getElementById("ai-golden")
+             Bouncer: document.getElementById("ai-bouncer"),
+             Chirpy: document.getElementById("ai-chirpy"),
+             Parody: document.getElementById("ai-parody"),
+             Bandit: document.getElementById("ai-bandit"),
+             Glitch: document.getElementById("ai-glitch")
           };
 
-          // Radar Dot Elements
-          const dotsStorage = document.getElementById("dots-storage");
-          const dotsHallway = document.getElementById("dots-hallway");
-          const dotsStage = document.getElementById("dots-stage");
-          const dotsOffice = document.getElementById("dots-office");
+          // 8 Map Coordinate Panels Hooks
+          const dotPanels = {
+             0: document.getElementById("dots-stage"),
+             1: document.getElementById("dots-dining"),
+             2: document.getElementById("dots-cove"),
+             3: document.getElementById("dots-backstage"),
+             4: document.getElementById("dots-restrooms"),
+             5: document.getElementById("dots-lhall"),
+             6: document.getElementById("dots-rhall"),
+             7: document.getElementById("dots-vault"),
+             8: document.getElementById("dots-office")
+          };
 
           let currentCam = 0;
           let power = 100;
@@ -456,41 +468,30 @@
           let seconds = 0;
           let phoneMuted = false;
           let customMode = false;
-          let isGoldenFreddyMode = false;
-          let goldenFreddyBeaten = false;
+          let maxModeActive = false;
+          let maxModeBeaten = false;
 
-          // Populate drop downs from 0 to 20
+          // Initial Setup Configuration Dropdowns
           Object.values(aiSelectors).forEach(select => {
               for(let i=0; i<=20; i++) {
                   const opt = document.createElement("option");
                   opt.value = i; opt.textContent = i;
                   select.appendChild(opt);
               }
-              select.value = 0; // Default startup
+              select.value = 0;
           });
 
-          const rooms = ["Storage", "Hallway", "Stage"];
-
+          // 8 Camera index pointers mapped to internal positions
           const anims = [
-            { name: "Bonnie", pos: 2, moveChance: 0.15, type: "standard", level: 0 },
-            { name: "Chica", pos: 2, moveChance: 0.12, type: "standard", level: 0 },
-            { name: "Freddy", pos: 2, moveChance: 0.0, type: "freddy", patience: 0, level: 0 },
-            { name: "Foxy", pos: 2, moveChance: 0.0, type: "foxy", unseenTicks: 0, level: 0 },
-            { name: "Golden Freddy", pos: 2, moveChance: 0.0, type: "golden", level: 0 },
+            { name: "Bouncer", pos: 0, path: [0, 1, 3, 5, 8], pathIdx: 0, moveChance: 0.15, type: "standard", level: 0, icon: "🐰" },
+            { name: "Chirpy", pos: 0, path: [0, 1, 4, 6, 8], pathIdx: 0, moveChance: 0.12, type: "standard", level: 0, icon: "🐔" },
+            { name: "Parody Bear", pos: 0, path: [0, 1, 4, 6, 8], pathIdx: 0, moveChance: 0.0, type: "stalker", level: 0, icon: "🐻" },
+            { name: "Bandit Fox", pos: 2, path: [2, 1, 5, 8], pathIdx: 0, moveChance: 0.0, type: "rusher", level: 0, icon: "🦊", statusTicks: 0 },
+            { name: "Golden Glitch", pos: 7, path: [7, 8], pathIdx: 0, moveChance: 0.0, type: "glitch", level: 0, icon: "👑" }, // Starts inside Vault (7)
           ];
 
-          function animSide(a) { return ["Bonnie", "Foxy"].includes(a.name) ? "right" : "left"; }
-          function animEmoji(a) {
-            if (a.type === "golden") return "👑";
-            if (a.name === "Bonnie") return "🐰";
-            if (a.name === "Chica") return "🐔";
-            if (a.name === "Freddy") return "🐻";
-            if (a.name === "Foxy") return "🦊";
-            return "👾";
-          }
-
           const staticOverlay = document.getElementById("static-overlay");
-          function showStatic(ms = 1200) {
+          function showStatic(ms = 800) {
             if (!staticOverlay) return;
             staticOverlay.classList.add("active");
             setTimeout(() => staticOverlay.classList.remove("active"), ms);
@@ -498,7 +499,7 @@
 
           function renderStatus() {
             const displayHour = hour === 0 ? 12 : hour;
-            nightTitle.textContent = customMode ? (isGoldenFreddyMode ? "GOLDEN MODE" : "CUSTOM NIGHT") : `NIGHT ${night}`;
+            nightTitle.textContent = customMode ? (maxModeActive ? "MAX MODE" : "CUSTOM SIM") : `NIGHT ${night}`;
             timeEl.textContent = `${displayHour} AM`;
             powerEl.textContent = Math.max(0, Math.floor(power)) + "%";
             updateCameraViews();
@@ -508,37 +509,30 @@
           }
 
           function updateRadarMap() {
-            dotsStorage.innerHTML = ""; dotsHallway.innerHTML = ""; dotsStage.innerHTML = ""; dotsOffice.innerHTML = "";
+            Object.values(dotPanels).forEach(panel => { if (panel) panel.innerHTML = ""; });
 
             anims.forEach((a) => {
-                // Real-time concealment filters for nights 1 & 2
-                if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) {
-                    return; 
-                }
-                // Don't show on radar if AI difficulty is explicitly set to 0 in custom settings
-                if (customMode && a.level === 0) {
-                    return;
-                }
+                if (!customMode && night < 3 && (a.type === "stalker" || a.type === "rusher" || a.type === "glitch")) return;
+                if (customMode && a.level === 0) return;
 
                 const span = document.createElement("span");
-                span.textContent = animEmoji(a);
-                span.title = `${a.name} (AI: ${customMode ? a.level : 'Scale'})`;
+                span.textContent = a.icon;
+                span.title = `${a.name} (AI: ${a.level})`;
 
-                if (a.pos === 0) dotsStorage.appendChild(span);
-                else if (a.pos === 1) dotsHallway.appendChild(span);
-                else if (a.pos === 2) dotsStage.appendChild(span);
-                else if (a.pos >= 3) dotsOffice.appendChild(span);
+                if (dotPanels[a.pos]) {
+                    dotPanels[a.pos].appendChild(span);
+                }
             });
           }
 
-          function getSavedState() { try { return JSON.parse(localStorage.getItem("fnaf-save-v2")); } catch (e) { return null; } }
+          function getSavedState() { try { return JSON.parse(localStorage.getItem("parody-sim-save-v3")); } catch (e) { return null; } }
           function hasSavedGame() { return !!getSavedState(); }
 
           function saveGameState() {
             if (!running) return;
-            localStorage.setItem("fnaf-save-v2", JSON.stringify({
-              night, hour, power, currentCam, lightOn, leftDoorClosed, rightDoorClosed, seconds, customMode, isGoldenFreddyMode,
-              anims: anims.map((a) => ({ name: a.name, pos: a.pos, level: a.level }))
+            localStorage.setItem("parody-sim-save-v3", JSON.stringify({
+              night, hour, power, currentCam, lightOn, leftDoorClosed, rightDoorClosed, seconds, customMode, maxModeActive,
+              anims: anims.map(a => ({ name: a.name, pos: a.pos, pathIdx: a.pathIdx, level: a.level }))
             }));
           }
 
@@ -546,53 +540,42 @@
             const save = getSavedState(); if (!save) return false;
             night = save.night; hour = save.hour; power = save.power; currentCam = save.currentCam;
             lightOn = save.lightOn; leftDoorClosed = !!save.leftDoorClosed; rightDoorClosed = !!save.rightDoorClosed;
-            seconds = save.seconds || 0; customMode = !!save.customMode; isGoldenFreddyMode = !!save.isGoldenFreddyMode;
+            seconds = save.seconds || 0; customMode = !!save.customMode; maxModeActive = !!save.maxModeActive;
             
             save.anims?.forEach((saved) => {
-              const target = anims.find((item) => item.name === saved.name);
-              if (target) { target.pos = saved.pos; target.level = saved.level || 0; }
+              const target = anims.find(item => item.name === saved.name);
+              if (target) { target.pos = saved.pos; target.pathIdx = saved.pathIdx; target.level = saved.level || 0; }
             });
 
             document.querySelector(".room").classList.toggle("light-on", lightOn);
             document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
-            lightStateEl.textContent = lightOn ? "On" : "Off";
             return true;
           }
 
-          function getPrefs() { try { return JSON.parse(localStorage.getItem("fnaf-prefs-v2")) || {}; } catch (e) { return {}; } }
-          function savePrefs() {
-            try { localStorage.setItem("fnaf-prefs-v2", JSON.stringify({ phoneMuted, goldenFreddyBeaten })); } catch (e) {}
-          }
+          function getPrefs() { try { return JSON.parse(localStorage.getItem("parody-sim-prefs-v3")) || {}; } catch (e) { return {}; } }
+          function savePrefs() { try { localStorage.setItem("parody-sim-prefs-v3", JSON.stringify({ phoneMuted, maxModeBeaten })); } catch (e) {} }
 
           function startNight(startNightNumber = 1, isCustom = false, customLevels = null) {
-            customMode = isCustom; 
-            night = startNightNumber; 
-            hour = 0; seconds = 0; power = 100; currentCam = 0;
+            customMode = isCustom; night = startNightNumber; hour = 0; seconds = 0; power = 100; currentCam = 0;
             lightOn = false; leftDoorClosed = false; rightDoorClosed = false;
             
             anims.forEach(a => {
-              a.pos = 2; // stage start location
-              if (a.type === "freddy") a.patience = 0;
-              if (a.type === "foxy") a.unseenTicks = 0;
+              a.pathIdx = 0;
+              a.pos = a.path[0]; 
+              if (a.type === "rusher") a.statusTicks = 0;
             });
 
             if (isCustom && customLevels) {
-                // Assign explicitly selected level indices 0-20
-                anims.find(a => a.name === "Bonnie").level = customLevels.Bonnie;
-                anims.find(a => a.name === "Chica").level = customLevels.Chica;
-                anims.find(a => a.name === "Freddy").level = customLevels.Freddy;
-                anims.find(a => a.name === "Foxy").level = customLevels.Foxy;
-                anims.find(a => a.type === "golden").level = customLevels.Golden;
+                anims.find(a => a.name === "Bouncer").level = customLevels.Bouncer;
+                anims.find(a => a.name === "Chirpy").level = customLevels.Chirpy;
+                anims.find(a => a.name === "Parody Bear").level = customLevels.Parody;
+                anims.find(a => a.name === "Bandit Fox").level = customLevels.Bandit;
+                anims.find(a => a.type === "glitch").level = customLevels.Glitch;
 
-                // Derive movement loop scaling calculations directly out of AI Level bounds [0.0 to 0.70]
-                anims.forEach(a => {
-                   a.moveChance = (a.level / 20) * 0.65; 
-                });
-                
-                // Track if this matches 20/20/20/20/20 mode
-                isGoldenFreddyMode = Object.values(customLevels).every(v => v === 20);
+                anims.forEach(a => { a.moveChance = (a.level / 20) * 0.65; });
+                maxModeActive = Object.values(customLevels).every(v => v === 20);
             } else {
-                isGoldenFreddyMode = false;
+                maxModeActive = false;
                 setStandardDifficulty();
             }
 
@@ -601,44 +584,56 @@
             if (lightStateEl) lightStateEl.textContent = "Off";
             if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
             if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
+            
             cameraView.querySelectorAll(".camera").forEach((c, i) => c.classList.toggle("hidden", i !== 0));
             camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
             if (mainMenu) mainMenu.classList.add("hidden");
+            
             running = true;
             showActiveCamera();
             renderStatus();
 
-            if (isGoldenFreddyMode) {
-                showMessage("🚨 MODE: GOLDEN FREDDY 20/20/20/20/20 🚨");
-            } else if (isCustom) {
-                showMessage("Custom Night Configuration Activated.");
-            } else {
-                showPhoneBubble("Keep tabs on the radar map panel to track door hallway line movements!");
-            }
+            if (maxModeActive) showMessage("🚨 MODE 20/20/20/20/20 INITIATED 🚨");
+            else if (isCustom) showMessage("Custom Sim Parameters Online.");
+            else showPhoneBubble("8 cameras linked. Be extremely careful when pulling up CAM 8!");
           }
 
           function setStandardDifficulty() {
             anims.forEach((a) => {
-              if (a.name === "Bonnie") a.moveChance = 0.15 + (night - 1) * 0.05;
-              if (a.name === "Chica") a.moveChance = 0.11 + (night - 1) * 0.05;
+              if (a.name === "Bouncer") a.moveChance = 0.14 + (night * 0.04);
+              if (a.name === "Chirpy") a.moveChance = 0.10 + (night * 0.04);
               
-              // Handle campaign movement delays across early night builds
               if (night < 3) {
-                if (a.type === "freddy" || a.type === "foxy" || a.type === "golden") a.moveChance = 0.0;
+                if (a.type === "stalker" || a.type === "rusher" || a.type === "glitch") a.moveChance = 0.0;
               } else {
-                if (a.name === "Freddy") a.moveChance = 0.10 + (night - 3) * 0.06;
-                if (a.name === "Foxy") a.moveChance = 0.12 + (night - 3) * 0.06;
-                if (a.type === "golden") a.moveChance = 0.03 + (night - 3) * 0.04;
+                if (a.name === "Parody Bear") a.moveChance = 0.08 + (night * 0.03);
+                if (a.name === "Bandit Fox") a.moveChance = 0.10 + (night * 0.04);
+                if (a.type === "glitch") a.moveChance = 0.05 + (night * 0.04);
               }
-              a.level = Math.floor(a.moveChance * 20); // visual estimation match
+              a.level = Math.floor(a.moveChance * 20);
             });
           }
 
           function showActiveCamera() {
-            cameraView.querySelectorAll(".camera").forEach((c) => c.classList.add("hidden"));
+            cameraView.querySelectorAll(".camera").forEach(c => c.classList.add("hidden"));
             const active = cameraView.querySelector(`.camera[data-cam="${currentCam}"]`);
             if (active) active.classList.remove("hidden");
-            camBtns.forEach((b) => b.classList.toggle("active", Number(b.dataset.cam) === currentCam));
+            camBtns.forEach(b => b.classList.toggle("active", Number(b.dataset.cam) === currentCam));
+
+            // Instant trigger check: Viewing Cam 8 while Glitch is sitting inside it
+            if (currentCam === 7) {
+                const glitch = anims.find(a => a.type === "glitch");
+                if (glitch && glitch.pos === 7 && glitch.level > 0) {
+                     triggerGlitchJumpscare();
+                }
+            }
+          }
+
+          function triggerGlitchJumpscare() {
+             running = false;
+             document.getElementById("jumpscare-text").innerHTML = `👑 GOLDEN GLITCH OVERLOAD 👑<br><span style='font-size:14px;color:#ffcc00;'>EXPOSED TO VAULT CORRUPTION FEEDS</span>`;
+             document.getElementById("jumpscare").classList.remove("hidden");
+             document.getElementById("end-controls").classList.remove("hidden");
           }
 
           function openMainMenu() {
@@ -646,89 +641,97 @@
             running = false; 
             if (menuNightEl) menuNightEl.textContent = night;
             if (continueBtn) continueBtn.disabled = !hasSavedGame();
-            victoryStar.style.display = goldenFreddyBeaten ? "block" : "none";
+            victoryStar.style.display = maxModeBeaten ? "block" : "none";
             renderStatus();
           }
 
           function updateCameraViews() {
-            rooms.forEach((_, i) => {
+            for(let i=0; i<8; i++) {
               const view = document.querySelector(`.camera[data-cam="${i}"] .camera-visitors`);
-              if (!view) return;
+              if (!view) continue;
               
-              const visitors = anims.filter((a) => {
-                 if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) return false;
+              const visitors = anims.filter(a => {
+                 if (!customMode && night < 3 && (a.type === "stalker" || a.type === "rusher" || a.type === "glitch")) return false;
                  if (customMode && a.level === 0) return false;
+                 
+                 // Evaluate room positions relative to map arrays
                  return a.pos === i;
-              }).map((a) => a.name);
+              }).map(a => a.name);
 
-              view.textContent = visitors.length ? `Visitors: ${visitors.join(", ")}` : "Visitors: None";
-            });
+              if (i === 7) {
+                  view.textContent = visitors.includes("Golden Glitch") ? "⚠️ DETECTED: [CORRUPTION DETECTED]" : "Feed Clear. System Quiet.";
+              } else {
+                  view.textContent = visitors.length ? `Entities: ${visitors.join(", ")}` : "Feed Clear. No anomalies.";
+              }
+            }
 
-            const leftDoorVisitors = anims.filter((a) => {
-                if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) return false;
-                return a.pos === 1 && animSide(a) === "left";
-            }).map((a) => a.name);
+            const lHallEntities = anims.filter(a => a.pos === 5).map(a => a.name);
+            const rHallEntities = anims.filter(a => a.pos === 6).map(a => a.name);
 
-            const rightDoorVisitors = anims.filter((a) => {
-                if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) return false;
-                return a.pos === 1 && animSide(a) === "right";
-            }).map((a) => a.name);
+            if (leftDoorStateEl) leftDoorStateEl.textContent = lHallEntities.length ? `Prox: ${lHallEntities.join(",")}` : leftDoorClosed ? "Closed" : "Open";
+            if (rightDoorStateEl) rightDoorStateEl.textContent = rHallEntities.length ? `Prox: ${rHallEntities.join(",")}` : rightDoorClosed ? "Closed" : "Open";
 
-            if (leftDoorStateEl) leftDoorStateEl.textContent = leftDoorVisitors.length ? `Sighted: ${leftDoorVisitors.join(", ")}` : leftDoorClosed ? "Closed" : "Open";
-            if (rightDoorStateEl) rightDoorStateEl.textContent = rightDoorVisitors.length ? `Sighted: ${rightDoorVisitors.join(", ")}` : rightDoorClosed ? "Closed" : "Open";
-
-            const officeVisitors = anims.filter((a) => a.pos >= 3).map((a) => a.name);
-            office.textContent = officeVisitors.length ? `Office Threat: ${officeVisitors.join(", ")}` : "Office Secure";
+            const breach = anims.filter(a => a.pos === 8).map(a => a.name);
+            office.textContent = breach.length ? `BREACH DETECTED: ${breach.join(", ")}` : "Office Sealed & Secure";
           }
 
           function showPhoneBubble(text) {
             if (phoneMuted || !phoneBubble) return;
             phoneBubble.textContent = text; phoneBubble.classList.remove("hidden");
-            setTimeout(() => phoneBubble.classList.add("hidden"), 4000);
+            setTimeout(() => phoneBubble.classList.add("hidden"), 3500);
           }
 
           function showMessage(text) {
             message.textContent = text; message.classList.remove("hidden");
-            setTimeout(() => message.classList.add("hidden"), 3000);
+            setTimeout(() => message.classList.add("hidden"), 2500);
           }
 
-          // Trigger Custom Nights 
           customLaunchBtn.addEventListener("click", () => {
-             const configurations = {
-                Bonnie: Number(aiSelectors.Bonnie.value),
-                Chica: Number(aiSelectors.Chica.value),
-                Freddy: Number(aiSelectors.Freddy.value),
-                Foxy: Number(aiSelectors.Foxy.value),
-                Golden: Number(aiSelectors.Golden.value)
-             };
-             startNight(6, true, configurations);
+             startNight(6, true, {
+                Bouncer: Number(aiSelectors.Bouncer.value),
+                Chirpy: Number(aiSelectors.Chirpy.value),
+                Parody: Number(aiSelectors.Parody.value),
+                Bandit: Number(aiSelectors.Bandit.value),
+                Glitch: Number(aiSelectors.Glitch.value)
+             });
           });
 
-          // 20/20/20/20/20 Ultimate Trigger Preset
           goldenModeBtn.addEventListener("click", () => {
-             Object.values(aiSelectors).forEach(select => select.value = 20);
-             startNight(7, true, { Bonnie: 20, Chica: 20, Freddy: 20, Foxy: 20, Golden: 20 });
+             Object.values(aiSelectors).forEach(s => s.value = 20);
+             startNight(7, true, { Bouncer: 20, Chirpy: 20, Parody: 20, Bandit: 20, Glitch: 20 });
           });
 
           camBtns.forEach(btn => btn.addEventListener("click", () => {
              if (!running) return;
-             currentCam = Number(btn.dataset.cam); showActiveCamera(); power -= 0.1; renderStatus();
+             currentCam = Number(btn.dataset.cam); showActiveCamera(); power -= 0.08; renderStatus();
           }));
+
+          // Keyboard Shortcuts Listener for [1-8] keys
+          window.addEventListener("keydown", (e) => {
+              if (!running) return;
+              const keyNum = parseInt(e.key);
+              if (keyNum >= 1 && keyNum <= 8) {
+                  currentCam = keyNum - 1;
+                  showActiveCamera();
+                  renderStatus();
+              }
+          });
 
           newGameBtn?.addEventListener("click", () => startNight(1, false));
           continueBtn?.addEventListener("click", () => { if (loadGameState()) { openMainMenu(); mainMenu.classList.add("hidden"); running = true; showActiveCamera(); renderStatus(); } });
           menuBtn?.addEventListener("click", () => { document.getElementById("jumpscare").classList.add("hidden"); openMainMenu(); });
-          restartBtn?.addEventListener("click", () => { document.getElementById("jumpscare").classList.add("hidden"); startNight(night, customMode, customMode ? { Bonnie: Number(aiSelectors.Bonnie.value), Chica: Number(aiSelectors.Chica.value), Freddy: Number(aiSelectors.Freddy.value), Foxy: Number(aiSelectors.Foxy.value), Golden: Number(aiSelectors.Golden.value) } : null); });
+          restartBtn?.addEventListener("click", () => { document.getElementById("jumpscare").classList.add("hidden"); startNight(night, customMode, customMode ? { Bouncer: Number(aiSelectors.Bouncer.value), Chirpy: Number(aiSelectors.Chirpy.value), Parody: Number(aiSelectors.Parody.value), Bandit: Number(aiSelectors.Bandit.value), Glitch: Number(aiSelectors.Glitch.value) } : null); });
 
           toggleLight.addEventListener("click", () => { if (!running) return; lightOn = !lightOn; document.querySelector(".room").classList.toggle("light-on", lightOn); lightStateEl.textContent = lightOn ? "On" : "Off"; renderStatus(); });
           toggleLeftDoor?.addEventListener("click", () => { if (!running) return; leftDoorClosed = !leftDoorClosed; document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed); renderStatus(); });
           toggleRightDoor?.addEventListener("click", () => { if (!running) return; rightDoorClosed = !rightDoorClosed; document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed); renderStatus(); });
+          phoneMuteBtn?.addEventListener("click", () => { phoneMuted = true; phoneBubble.classList.add("hidden"); showMessage("Comms Muted."); });
 
           function checkLose() {
             for (const a of anims) {
-              if (a.pos === 3 && (lightOn || currentCam !== null)) {
+              if (a.pos === 8 && (lightOn || currentCam !== null)) {
                   running = false;
-                  document.getElementById("jumpscare-text").innerHTML = `⚡ ${a.name.toUpperCase()} JUMPSCARE! ⚡<br><span style='font-size:16px;color:#666;'>FAILED AT ${hour === 0 ? 12 : hour} AM</span>`;
+                  document.getElementById("jumpscare-text").innerHTML = `⚡ ${a.name.toUpperCase()} SYSTEM OVERRIDE ⚡<br><span style='font-size:14px;color:#555;'>CRITICAL LOSS AT ${hour === 0 ? 12 : hour} AM</span>`;
                   document.getElementById("jumpscare").classList.remove("hidden");
                   document.getElementById("end-controls").classList.remove("hidden");
                   return true;
@@ -743,63 +746,69 @@
             if (seconds % 12 === 0) hour = Math.min(6, hour + 1);
 
             let drain = 0.05;
-            if (lightOn) drain += 0.35;
-            if (leftDoorClosed || rightDoorClosed) drain += 0.18;
+            if (lightOn) drain += 0.30;
+            if (leftDoorClosed || rightDoorClosed) drain += 0.15;
             power -= drain;
             
-            if (power <= 0) { running = false; alert("Total System Power Blackout Outage!"); openMainMenu(); return; }
+            if (power <= 0) { running = false; alert("Total Grid Blackout!"); openMainMenu(); return; }
 
             for (const a of anims) {
-              // Ignore calculation evaluations entirely if AI tier is set to 0
-              if (customMode && a.level === 0) { a.pos = 2; continue; }
-              if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) { a.pos = 2; continue; }
+              if (customMode && a.level === 0) { continue; }
+              if (!customMode && night < 3 && (a.type === "stalker" || a.type === "rusher" || a.type === "glitch")) { continue; }
 
-              // Halting calculations logic inside room doors (pos 1)
-              if (a.type === "standard") {
-                let doorClosed = (animSide(a) === "left") ? leftDoorClosed : rightDoorClosed;
-                if (a.pos === 1) {
-                  if (doorClosed) {
-                    if (Math.random() < 0.32) { showMessage(`${a.name} bounced off the closed iron door.`); a.pos = 2; }
-                  } else {
-                    if (Math.random() < 0.28) { a.pos = 3; showMessage(`Warning: Heavy dynamic footsteps located in Office.`); }
+              // Dynamic Golden Glitch Staging Loop
+              if (a.type === "glitch") {
+                  if (a.pos === 7) {
+                      // Check if monitor is already observing Cam 8 when checking movement ticks
+                      if (currentCam === 7) { triggerGlitchJumpscare(); return; }
+                      
+                      if (Math.random() < (a.moveChance + 0.05)) {
+                          a.pos = 8; // Slip into the office silently
+                          showMessage("An eerie code anomaly entered the office area...");
+                      }
                   }
                   continue;
-                }
               }
 
-              // Foxy Run Patterns
-              if (a.type === "foxy") {
-                if (currentCam === 1) a.unseenTicks = 0; else a.unseenTicks = Math.min(6, a.unseenTicks + 1);
-                if (Math.random() < (a.moveChance + a.unseenTicks * 0.04)) {
-                    if (a.pos === 2) a.pos = 0;
-                    else if (a.pos === 0) a.pos = 1;
-                    else if (a.pos === 1) {
-                        if (leftDoorClosed || rightDoorClosed) { a.pos = 2; showStatic(600); showMessage("Foxy banged loudly against your office defenses!"); }
-                        else a.pos = 3;
-                    }
-                }
-                continue;
+              // Logic for Hallways Right outside the Office (Bouncer: 5, Chirpy & Parody: 6)
+              if (a.pos === 5 || a.pos === 6) {
+                 let doorClosed = (a.pos === 5) ? leftDoorClosed : rightDoorClosed;
+                 if (doorClosed) {
+                     if (Math.random() < 0.30) { showMessage(`${a.name} bounced off security barrier.`); a.pathIdx = 0; a.pos = a.path[0]; }
+                 } else {
+                     if (Math.random() < 0.25) { a.pos = 8; showMessage(`Danger: Structural breach in office hub!`); }
+                 }
+                 continue;
               }
 
-              // Base Random Path Walking Coordinates Loop
-              let scaleChance = a.moveChance + (hour * 0.02);
-              if (Math.random() < scaleChance) {
-                if (a.pos === 2) a.pos = 0;
-                else if (a.pos === 0) a.pos = 1;
-                else if (a.pos === 1) a.pos = 3;
+              // Bandit Fox (Pirate's Cove Rusher mechanic)
+              if (a.type === "rusher") {
+                 if (currentCam === 2) a.statusTicks = 0; else a.statusTicks = Math.min(6, a.statusTicks + 1);
+                 if (Math.random() < (a.moveChance + a.statusTicks * 0.04)) {
+                     if (a.pos === 2) { a.pos = 1; showMessage("Bandit Fox left Pirate's Cove!"); }
+                     else if (a.pos === 1) a.pos = 5; 
+                     else if (a.pos === 5) {
+                         if (leftDoorClosed) { a.pos = 2; a.statusTicks = 0; showStatic(400); showMessage("Loud banging on your left blast door!"); power -= 2; }
+                         else a.pos = 8;
+                     }
+                 }
+                 continue;
+              }
+
+              // Path Stepper Calculation
+              if (Math.random() < (a.moveChance + (hour * 0.01))) {
+                  if (a.pathIdx < a.path.length - 1) {
+                      a.pathIdx++;
+                      a.pos = a.path[a.pathIdx];
+                  }
               }
             }
 
             if (hour >= 6) {
               running = false;
-              if (isGoldenFreddyMode) {
-                  goldenFreddyBeaten = true;
-                  showMessage("👑 CHOSEN ONE ENTIRELY CLEARED! 20/20/20/20/20 BEATEN! 👑");
-              } else if (night < 5) {
-                  night += 1; showMessage(`Survison Clear! Moving up to Night ${night}`); startNight(night, false); return;
-              } else {
-                  showMessage("Standard Operational Campaign Victorious!");
-              }
+              if (maxModeActive) { maxModeBeaten = true; showMessage("👑 PARODY PLATINUM STATUS EARNED! 👑"); }
+              else if (night < 5) { night += 1; showMessage(`Shift Complete! Promoted to Night ${night}`); startNight(night, false); return; }
+              else { showMessage("Standard Shifts Victorious!"); }
               openMainMenu(); return;
             }
 
@@ -807,11 +816,11 @@
             checkLose();
           }
 
-          // Startup Initializations
+          // Initialize Game State Preferences
           (() => {
             const p = getPrefs();
             phoneMuted = !!p.phoneMuted;
-            goldenFreddyBeaten = !!p.goldenFreddyBeaten;
+            maxModeBeaten = !!p.maxModeBeaten;
             openMainMenu();
           })();
           
