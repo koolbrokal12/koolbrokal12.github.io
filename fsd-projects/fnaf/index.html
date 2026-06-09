@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Five Nights at Coder's</title>
+    <title>Five Nights at Coder's - 20/20/20/20/20 Edition</title>
     <style>
         body {
             background-color: #050505;
@@ -20,17 +20,22 @@
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 18px;
             color: #333;
             margin: 5px 0;
             letter-spacing: 3px;
         }
 
-        /* --- Main Game Frame --- */
+        #game-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
         #game-screen {
             position: relative;
             width: 500px;
-            height: 600px;
+            height: 620px;
             background: #111;
             border: 4px solid #222;
             border-radius: 8px;
@@ -42,169 +47,234 @@
             box-sizing: border-box;
         }
 
-        /* --- Main Menu Overlay --- */
-        #main-menu {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 100;
+        /* --- RADAR MAP MONITOR PANEL --- */
+        #radar-panel {
+            width: 280px;
+            height: 620px;
+            background: #0a0e0a;
+            border: 4px solid #1a2e1a;
+            border-radius: 8px;
+            padding: 15px;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 30px;
-            box-sizing: border-box;
+            box-shadow: 0 0 15px rgba(0, 255, 100, 0.1);
+        }
+
+        .radar-title {
+            color: #00ff66;
+            font-size: 14px;
+            font-weight: bold;
             text-align: center;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px rgba(0,255,100,0.5);
+        }
+
+        #map-grid {
+            position: relative;
+            width: 240px;
+            height: 340px;
+            background: rgba(0, 20, 5, 0.6);
+            border: 2px solid #00ff66;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .map-room {
+            position: absolute;
+            border: 1px dashed #00ff66;
+            background: rgba(0, 40, 10, 0.3);
+            color: #00ff66;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 5px;
+            box-sizing: border-box;
+            font-weight: bold;
+        }
+
+        #map-stage { top: 15px; left: 20px; width: 200px; height: 70px; }
+        #map-storage { top: 100px; left: 20px; width: 90px; height: 90px; }
+        #map-hallway { top: 100px; left: 130px; width: 90px; height: 140px; }
+        #map-office { bottom: 15px; left: 65px; width: 110px; height: 70px; border: 2px solid #ff3333; color: #ff3333; background: rgba(40, 0, 0, 0.3); }
+
+        .map-dots {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 5px;
+            font-size: 16px;
+        }
+
+        #legend {
+            width: 100%;
+            border-top: 1px solid #1a2e1a;
+            padding-top: 10px;
+            font-size: 11px;
+            color: #88af88;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+
+        /* --- MAIN MENU SYSTEM --- */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; box-sizing: border-box; text-align: center;
+            overflow-y: auto;
         }
         #main-menu.hidden { display: none !important; }
-        .menu-title { font-family: 'Impact', sans-serif; font-size: 36px; color: #ff3333; margin-bottom: 5px; }
-        .menu-subtitle { font-size: 14px; color: #666; margin-bottom: 30px; }
+        .menu-title { font-family: 'Impact', sans-serif; font-size: 32px; color: #ff3333; margin-bottom: 2px; }
+        .menu-subtitle { font-size: 12px; color: #666; margin-bottom: 15px; }
+        
+        .star-rank {
+            color: #ffcc00;
+            font-size: 22px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 8px #ffcc00;
+            display: none;
+        }
+
         .menu-btn {
             background: #151515; color: #aaa; border: 1px solid #333;
-            padding: 10px 20px; margin: 5px; width: 220px; cursor: pointer;
-            font-family: inherit; font-size: 14px; transition: 0.2s;
+            padding: 8px 16px; margin: 4px; width: 240px; cursor: pointer;
+            font-family: inherit; font-size: 13px; transition: 0.2s;
+            border-radius: 3px;
         }
         .menu-btn:hover:not(:disabled) { background: #ff3333; color: #fff; border-color: #ff3333; }
-        .menu-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        #custom-unlock-note { font-size: 11px; color: #444; max-width: 250px; margin-top: 10px; }
-        #custom-night-select { background: #222; color: #fff; border: 1px solid #444; padding: 5px; margin-top: 5px; }
+        .menu-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        
+        .gold-btn {
+            background: #2a2205 !important;
+            color: #ffcc00 !important;
+            border: 1px solid #ffcc00 !important;
+            font-weight: bold;
+        }
+        .gold-btn:hover { background: #ffcc00 !important; color: #000 !important; }
 
-        /* --- HUD Display --- */
+        /* --- CUSTOM NIGHT PANEL --- */
+        #custom-config-box {
+            background: #0d0d0d;
+            border: 1px dashed #444;
+            padding: 10px;
+            margin-top: 10px;
+            width: 260px;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .ai-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #bbb;
+        }
+        .ai-selector {
+            background: #222;
+            color: #fff;
+            border: 1px solid #555;
+            font-family: inherit;
+            font-size: 11px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            width: 50px;
+        }
+
+        /* --- HUD & PLAYSCRIPTS --- */
         .hud {
             display: flex;
             justify-content: space-between;
             background: rgba(0,0,0,0.4);
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 16px;
+            font-size: 15px;
             border: 1px solid #222;
         }
         #time { color: #00ffcc; font-weight: bold; }
         #power { color: #ffcc00; font-weight: bold; }
 
-        /* --- Central Workspace: Office & Cameras --- */
         #workspace {
             display: flex;
             flex-direction: column;
             flex-grow: 1;
-            margin: 15px 0;
-            gap: 10px;
+            margin: 12px 0;
+            gap: 8px;
         }
 
         #player-office {
-            background: #1c1c1c;
-            border: 2px solid #333;
-            padding: 10px;
-            text-align: center;
-            font-weight: bold;
-            color: #ff5555;
-            text-transform: uppercase;
-            border-radius: 4px;
+            background: #1c1c1c; border: 2px solid #333; padding: 8px;
+            text-align: center; font-weight: bold; color: #ff5555;
+            text-transform: uppercase; border-radius: 4px; font-size: 14px;
         }
 
-        /* Camera Feed Display Box */
         #camera-view {
-            position: relative;
-            height: 200px;
-            background: #080808;
-            border: 2px solid #222;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            position: relative; height: 180px; background: #080808;
+            border: 2px solid #222; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
         .camera { width: 100%; height: 100%; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
         .camera.hidden { display: none !important; }
-        .camera-title { font-size: 14px; color: #888; position: absolute; top: 10px; left: 10px; }
-        .camera-visitors { font-size: 13px; color: #fff; margin-bottom: 10px; }
-        .camera-overlay { display: flex; gap: 8px; font-size: 24px; margin-top: 5px; }
+        .camera-title { font-size: 13px; color: #888; position: absolute; top: 10px; left: 10px; }
+        .camera-visitors { font-size: 12px; color: #fff; margin-bottom: 10px; }
+        .camera-overlay { display: flex; gap: 8px; font-size: 22px; margin-top: 5px; }
 
-        /* Camera Switching Interface */
-        .camera-controls {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-        }
+        .camera-controls { display: flex; justify-content: center; gap: 8px; }
         .cam-btn {
             background: #222; color: #888; border: 1px solid #444;
-            padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 12px;
-            border-radius: 3px;
+            padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 12px; border-radius: 3px;
         }
         .cam-btn.active { background: #00ffcc; color: #000; border-color: #00ffcc; font-weight: bold; }
 
-        /* --- Room Dynamic Environment Lighting (Modified by JS Classes) --- */
         .room { transition: background 0.1s; }
         .room.light-on { background: #3a3a2a !important; border-color: #ffcc00 !important; }
         .room.door-closed { border-style: dashed; }
 
-        /* --- Physical Safety Controls --- */
-        .office-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-        }
+        .office-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .control-btn {
             background: #251010; color: #ff6666; border: 1px solid #552222;
-            padding: 10px; font-family: inherit; cursor: pointer; font-size: 13px;
+            padding: 8px; font-family: inherit; cursor: pointer; font-size: 12px;
             border-radius: 4px; text-transform: uppercase;
         }
         .control-btn:hover { background: #401a1a; }
         #toggle-light { background: #252510; color: #ffcc00; border-color: #555522; }
         #toggle-light:hover { background: #40401a; }
 
-        /* --- Bottom Utility Row (Phone Guy & Master Menu Return) --- */
-        .utility-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-        }
-        .util-btn {
-            background: #111; color: #666; border: 1px solid #222;
-            padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: inherit;
-        }
+        .utility-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .util-btn { background: #111; color: #666; border: 1px solid #222; padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
         .util-btn:hover { color: #fff; border-color: #444; }
 
-        /* --- Toast Alert Messages --- */
         #message {
-            position: absolute;
-            top: 60px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.9); border: 1px solid #ff3333; color: #ff3333;
-            padding: 8px 16px; font-size: 12px; z-index: 50; border-radius: 4px;
-            text-align: center; max-width: 80%;
+            padding: 8px 16px; font-size: 12px; z-index: 50; border-radius: 4px; text-align: center; max-width: 80%;
         }
         #message.hidden { display: none; }
-
-        /* --- Subtitle Bubble for Audio --- */
         #phone-bubble {
-            position: absolute;
-            bottom: 60px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.85); border: 1px solid #00ffcc; color: #fff;
-            padding: 10px; font-size: 12px; z-index: 40; border-radius: 4px;
-            text-align: center; width: 85%; box-sizing: border-box;
+            padding: 10px; font-size: 11px; z-index: 40; border-radius: 4px; text-align: center; width: 85%; box-sizing: border-box;
         }
         #phone-bubble.hidden { display: none; }
 
-        /* --- Jumpscare Screen Modals --- */
         #jumpscare {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 90;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         #jumpscare.hidden { display: none !important; }
-        #jumpscare-text { font-family: 'Impact', sans-serif; font-size: 48px; color: #ff0000; letter-spacing: 5px; animation: shake 0.1s infinite; }
-        #jumpscare-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        #jumpscare.jumpscare-golden #jumpscare-text { color: #ffcc00; text-shadow: 0 0 10px #fff; }
-
-        /* Post-Run Overlay Controls */
-        #end-controls {
-            position: absolute; bottom: 40px; display: flex; gap: 10px; z-index: 95;
-        }
+        #jumpscare-text { font-family: 'Impact', sans-serif; font-size: 40px; color: #ff0000; letter-spacing: 4px; animation: shake 0.1s infinite; text-align: center; }
+        #end-controls { position: absolute; bottom: 40px; display: flex; gap: 10px; z-index: 95; }
         #end-controls.hidden { display: none !important; }
-
-        /* Static Camera Screen Noise effect overlay */
         #static-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.15); opacity: 0; pointer-events: none; z-index: 20;
@@ -225,93 +295,114 @@
 </head>
 <body>
 
-    <h1>SECURITY SYSTEM TERMINAL</h1>
+    <h1>SECURITY MONITOR TERMINAL</h1>
 
-    <div id="game-screen">
-        <div id="static-overlay"></div>
+    <div id="game-container">
+        
+        <div id="game-screen">
+            <div id="static-overlay"></div>
+            <div id="message" class="hidden"></div>
+            <div id="phone-bubble" class="hidden"></div>
 
-        <div id="message" class="hidden"></div>
-        <div id="phone-bubble" class="hidden"></div>
-
-        <div id="jumpscare" class="hidden" aria-hidden="true">
-            <div id="jumpscare-text">JUMPSCARE</div>
-            <img id="jumpscare-img" class="hidden" alt="Jumpscare Asset">
-            <div id="end-controls" class="hidden">
-                <button id="restart-btn" class="menu-btn" style="width: 120px;">Try Again</button>
-                <button id="menu-btn" class="menu-btn" style="width: 120px;">Main Menu</button>
-            </div>
-        </div>
-
-        <div id="main-menu">
-            <div class="menu-title">FIVE NIGHTS AT CODER'S</div>
-            <div class="menu-subtitle">Night <span id="menu-night">1</span> Security Feed</div>
-            
-            <button id="new-game-btn" class="menu-btn">New Game (Night 1)</button>
-            <button id="continue-btn" class="menu-btn">Continue Saved Game</button>
-            
-            <hr style="width: 60%; border-color: #222; margin: 15px 0;">
-            
-            <button id="custom-night-btn" class="menu-btn">Start Custom Night</button>
-            <select id="custom-night-select">
-                <option value="1">Night 1</option>
-                <option value="2">Night 2</option>
-                <option value="3">Night 3</option>
-                <option value="4">Night 4</option>
-                <option value="5">Night 5</option>
-            </select>
-            <div id="custom-unlock-note">Beat Night 5 to unlock Custom Night mode.</div>
-        </div>
-
-        <div class="hud">
-            <div>TIME: <span id="time">12 AM</span> (NIGHT <span id="night">1</span>)</div>
-            <div>POWER: <span id="power">100%</span></div>
-        </div>
-
-        <div id="workspace">
-            <div id="player-office" class="room">Office</div>
-
-            <div id="camera-view">
-                <div class="camera" data-cam="0">
-                    <div class="camera-title">CAM 1: Storage Room</div>
-                    <div class="camera-visitors">Visitors: None</div>
-                    <div class="camera-overlay"></div>
-                </div>
-                <div class="camera hidden" data-cam="1">
-                    <div class="camera-title">CAM 2: Hallway Corridor</div>
-                    <div class="camera-visitors">Visitors: None</div>
-                    <div class="camera-overlay"></div>
-                </div>
-                <div class="camera hidden" data-cam="2">
-                    <div class="camera-title">CAM 3: Main Stage Assembly</div>
-                    <div class="camera-visitors">Visitors: None</div>
-                    <div class="camera-overlay"></div>
+            <div id="jumpscare" class="hidden" aria-hidden="true">
+                <div id="jumpscare-text">JUMPSCARE</div>
+                <div id="end-controls" class="hidden">
+                    <button id="restart-btn" class="menu-btn" style="width: 120px;">Try Again</button>
+                    <button id="menu-btn" class="menu-btn" style="width: 120px;">Main Menu</button>
                 </div>
             </div>
 
-            <div class="camera-controls">
-                <button class="cam-btn active" data-cam="0">Cam 1</button>
-                <button class="cam-btn" data-cam="1">Cam 2</button>
-                <button class="cam-btn" data-cam="2">Cam 3</button>
-                <span id="camera" style="display:none;">Cam 1</span>
+            <div id="main-menu">
+                <div class="menu-title">FIVE NIGHTS AT CODER'S</div>
+                <div class="menu-subtitle">Night Control Terminal Interface</div>
+                
+                <div class="star-rank" id="victory-star">★</div>
+
+                <button id="new-game-btn" class="menu-btn">Standard Mode (Night <span id="menu-night">1</span>)</button>
+                <button id="continue-btn" class="menu-btn">Resume Progress</button>
+                
+                <div id="custom-config-box">
+                    <div style="font-size:11px; text-align:center; color:#ffcc00; font-weight:bold; margin-bottom:4px;">CUSTOM NIGHT LEVEL SELECTOR</div>
+                    
+                    <div class="ai-row"><span>🐰 Bonnie AI:</span><select id="ai-bonnie" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🐔 Chica AI:</span><select id="ai-chica" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🐻 Freddy AI:</span><select id="ai-freddy" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>🦊 Foxy AI:</span><select id="ai-foxy" class="ai-selector"></select></div>
+                    <div class="ai-row"><span>👑 G. Freddy AI:</span><select id="ai-golden" class="ai-selector"></select></div>
+                    
+                    <button id="custom-launch-btn" class="menu-btn" style="width:100%; margin:4px 0 0 0;">Launch Custom Levels</button>
+                    <button id="golden-mode-btn" class="menu-btn gold-btn" style="width:100%; margin:4px 0 0 0;">🏆 GOLDEN FREDDY (20/20/20/20/20)</button>
+                </div>
+            </div>
+
+            <div class="hud">
+                <div>TIME: <span id="time">12 AM</span> (<span id="night-title">NIGHT 1</span>)</div>
+                <div>POWER: <span id="power">100%</span></div>
+            </div>
+
+            <div id="workspace">
+                <div id="player-office" class="room">Office Room</div>
+
+                <div id="camera-view">
+                    <div class="camera" data-cam="0">
+                        <div class="camera-title">CAM 1: Storage Closet</div>
+                        <div class="camera-visitors">Visitors: None</div>
+                        <div class="camera-overlay"></div>
+                    </div>
+                    <div class="camera hidden" data-cam="1">
+                        <div class="camera-title">CAM 2: Hallway Corridor</div>
+                        <div class="camera-visitors">Visitors: None</div>
+                        <div class="camera-overlay"></div>
+                    </div>
+                    <div class="camera hidden" data-cam="2">
+                        <div class="camera-title">CAM 3: Main Assembly Stage</div>
+                        <div class="camera-visitors">Visitors: None</div>
+                        <div class="camera-overlay"></div>
+                    </div>
+                </div>
+
+                <div class="camera-controls">
+                    <button class="cam-btn active" data-cam="0">Cam 1</button>
+                    <button class="cam-btn" data-cam="1">Cam 2</button>
+                    <button class="cam-btn" data-cam="2">Cam 3</button>
+                </div>
+            </div>
+
+            <div class="office-controls">
+                <button id="toggle-left-door" class="control-btn">Left Door <br><span id="left-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
+                <button id="toggle-light" class="control-btn">Office Flashlight <br><span id="light-state" style="font-size:10px; opacity:0.7;">Off</span></button>
+                <button id="toggle-right-door" class="control-btn">Right Door <br><span id="right-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
+            </div>
+
+            <div class="utility-row">
+                <div>
+                    <button id="phone-call-btn" class="util-btn">Replay Audio</button>
+                    <button id="phone-mute-btn" class="util-btn">Mute Audio</button>
+                </div>
+                <div style="font-size: 10px; color: #444;">[1-3] Cams | [L] Light | [D] Doors</div>
             </div>
         </div>
 
-        <div class="office-controls">
-            <button id="toggle-left-door" class="control-btn">Left Door <br><span id="left-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
-            <button id="toggle-light" class="control-btn">Office Flashlight <br><span id="light-state" style="font-size:10px; opacity:0.7;">Off</span></button>
-            <button id="toggle-right-door" class="control-btn">Right Door <br><span id="right-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
-        </div>
-
-        <div id="left-door-light" style="display:none;"></div>
-        <div id="right-door-light" style="display:none;"></div>
-
-        <div class="utility-row">
-            <div>
-                <button id="phone-call-btn" class="util-btn">Replay Instructions</button>
-                <button id="phone-mute-btn" class="util-btn">Mute Phone Guy</button>
+        <div id="radar-panel">
+            <div class="radar-title">LIVE RADAR TRACKER</div>
+            
+            <div id="map-grid">
+                <div class="map-room" id="map-stage">STAGE (CAM 3)<div class="map-dots" id="dots-stage"></div></div>
+                <div class="map-room" id="map-storage">STORAGE (CAM 1)<div class="map-dots" id="dots-storage"></div></div>
+                <div class="map-room" id="map-hallway">HALL (CAM 2)<div class="map-dots" id="dots-hallway"></div></div>
+                <div class="map-room" id="map-office">OFFICE ROOM<div class="map-dots" id="dots-office"></div></div>
             </div>
-            <div style="font-size: 10px; color: #444;">[1-3] Cams | [L] Light | [D] Doors</div>
+
+            <div id="legend">
+                <div style="font-weight: bold; margin-bottom: 3px; color:#00ff66;">RADAR TRACKING KEY:</div>
+                <div class="legend-item"><span>🐰</span> Bonnie (Active Night 1+)</div>
+                <div class="legend-item"><span>🐔</span> Chica (Active Night 1+)</div>
+                <div class="legend-item"><span>🐻</span> Freddy (Active Night 3+)</div>
+                <div class="legend-item"><span>🦊</span> Foxy (Active Night 3+)</div>
+                <div class="legend-item"><span>👑</span> Golden Freddy (Rare, Night 3+)</div>
+            </div>
         </div>
+
     </div>
 
     <script>
@@ -328,19 +419,34 @@
           const lightStateEl = document.getElementById("light-state");
           const message = document.getElementById("message");
           const office = document.getElementById("player-office");
-          const cameraLabel = document.getElementById("camera");
-          const nightEl = document.getElementById("night");
+          const nightTitle = document.getElementById("night-title");
           const mainMenu = document.getElementById("main-menu");
           const newGameBtn = document.getElementById("new-game-btn");
           const continueBtn = document.getElementById("continue-btn");
-          const customNightBtn = document.getElementById("custom-night-btn");
-          const customNightSelect = document.getElementById("custom-night-select");
-          const customUnlockNote = document.getElementById("custom-unlock-note");
           const menuNightEl = document.getElementById("menu-night");
           const phoneCallBtn = document.getElementById("phone-call-btn");
           const phoneMuteBtn = document.getElementById("phone-mute-btn");
           const phoneBubble = document.getElementById("phone-bubble");
           const menuBtn = document.getElementById("menu-btn");
+          const restartBtn = document.getElementById("restart-btn");
+          const victoryStar = document.getElementById("victory-star");
+
+          // Custom Night Inputs Hooks
+          const customLaunchBtn = document.getElementById("custom-launch-btn");
+          const goldenModeBtn = document.getElementById("golden-mode-btn");
+          const aiSelectors = {
+             Bonnie: document.getElementById("ai-bonnie"),
+             Chica: document.getElementById("ai-chica"),
+             Freddy: document.getElementById("ai-freddy"),
+             Foxy: document.getElementById("ai-foxy"),
+             Golden: document.getElementById("ai-golden")
+          };
+
+          // Radar Dot Elements
+          const dotsStorage = document.getElementById("dots-storage");
+          const dotsHallway = document.getElementById("dots-hallway");
+          const dotsStage = document.getElementById("dots-stage");
+          const dotsOffice = document.getElementById("dots-office");
 
           let currentCam = 0;
           let power = 100;
@@ -349,37 +455,38 @@
           let running = false;
           let seconds = 0;
           let phoneMuted = false;
-          let customUnlocked = false;
           let customMode = false;
-          let selectedCustomNight = 1;
+          let isGoldenFreddyMode = false;
+          let goldenFreddyBeaten = false;
+
+          // Populate drop downs from 0 to 20
+          Object.values(aiSelectors).forEach(select => {
+              for(let i=0; i<=20; i++) {
+                  const opt = document.createElement("option");
+                  opt.value = i; opt.textContent = i;
+                  select.appendChild(opt);
+              }
+              select.value = 0; // Default startup
+          });
 
           const rooms = ["Storage", "Hallway", "Stage"];
 
           const anims = [
-            { name: "Bonnie", pos: 1, moveChance: 0.22, type: "standard" },
-            { name: "Chica", pos: 1, moveChance: 0.18, type: "standard" },
-            { name: "Freddy", pos: 0, moveChance: 0.1, type: "freddy", patience: 0 },
-            { name: "Foxy", pos: 1, moveChance: 0.18, type: "foxy", unseenTicks: 0 },
-            { name: "Golden Freddy", pos: 0, moveChance: 0.04, type: "golden" },
+            { name: "Bonnie", pos: 2, moveChance: 0.15, type: "standard", level: 0 },
+            { name: "Chica", pos: 2, moveChance: 0.12, type: "standard", level: 0 },
+            { name: "Freddy", pos: 2, moveChance: 0.0, type: "freddy", patience: 0, level: 0 },
+            { name: "Foxy", pos: 2, moveChance: 0.0, type: "foxy", unseenTicks: 0, level: 0 },
+            { name: "Golden Freddy", pos: 2, moveChance: 0.0, type: "golden", level: 0 },
           ];
 
-          function animSide(a) {
-            const right = ["Bonnie", "Foxy"];
-            return right.includes(a.name) ? "right" : "left";
-          }
-
+          function animSide(a) { return ["Bonnie", "Foxy"].includes(a.name) ? "right" : "left"; }
           function animEmoji(a) {
             if (a.type === "golden") return "👑";
-            if (a.name.toLowerCase().includes("bonnie")) return "🐰";
-            if (a.name.toLowerCase().includes("chica")) return "🐔";
-            if (a.name.toLowerCase().includes("freddy")) return "🐻";
-            if (a.name.toLowerCase().includes("foxy")) return "🦊";
+            if (a.name === "Bonnie") return "🐰";
+            if (a.name === "Chica") return "🐔";
+            if (a.name === "Freddy") return "🐻";
+            if (a.name === "Foxy") return "🦊";
             return "👾";
-          }
-
-          const goldenPossessors = ["Evan", "Cassidy"];
-          function goldenLoreName() {
-            return `Golden Freddy (${goldenPossessors.join(" & ")})`;
           }
 
           const staticOverlay = document.getElementById("static-overlay");
@@ -391,739 +498,324 @@
 
           function renderStatus() {
             const displayHour = hour === 0 ? 12 : hour;
-            if (nightEl) nightEl.textContent = night;
+            nightTitle.textContent = customMode ? (isGoldenFreddyMode ? "GOLDEN MODE" : "CUSTOM NIGHT") : `NIGHT ${night}`;
             timeEl.textContent = `${displayHour} AM`;
             powerEl.textContent = Math.max(0, Math.floor(power)) + "%";
-            if (cameraLabel) {
-              cameraLabel.textContent =
-                currentCam !== null ? `Cam ${currentCam + 1}` : "None";
-            }
             updateCameraViews();
+            updateRadarMap();
             saveGameState();
             savePrefs();
           }
 
-          function getSavedState() {
-            try {
-              return JSON.parse(localStorage.getItem("fnaf-save"));
-            } catch (e) {
-              return null;
-            }
+          function updateRadarMap() {
+            dotsStorage.innerHTML = ""; dotsHallway.innerHTML = ""; dotsStage.innerHTML = ""; dotsOffice.innerHTML = "";
+
+            anims.forEach((a) => {
+                // Real-time concealment filters for nights 1 & 2
+                if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) {
+                    return; 
+                }
+                // Don't show on radar if AI difficulty is explicitly set to 0 in custom settings
+                if (customMode && a.level === 0) {
+                    return;
+                }
+
+                const span = document.createElement("span");
+                span.textContent = animEmoji(a);
+                span.title = `${a.name} (AI: ${customMode ? a.level : 'Scale'})`;
+
+                if (a.pos === 0) dotsStorage.appendChild(span);
+                else if (a.pos === 1) dotsHallway.appendChild(span);
+                else if (a.pos === 2) dotsStage.appendChild(span);
+                else if (a.pos >= 3) dotsOffice.appendChild(span);
+            });
           }
 
-          function hasSavedGame() {
-            return !!getSavedState();
-          }
+          function getSavedState() { try { return JSON.parse(localStorage.getItem("fnaf-save-v2")); } catch (e) { return null; } }
+          function hasSavedGame() { return !!getSavedState(); }
 
           function saveGameState() {
             if (!running) return;
-            const save = {
-              night,
-              hour,
-              power,
-              currentCam,
-              lightOn,
-              leftDoorClosed,
-              rightDoorClosed,
-              seconds,
-              anims: anims.map((a) => ({
-                name: a.name,
-                pos: a.pos,
-                moveChance: a.moveChance,
-                patience: a.patience,
-                unseenTicks: a.unseenTicks,
-                type: a.type,
-              })),
-            };
-            localStorage.setItem("fnaf-save", JSON.stringify(save));
+            localStorage.setItem("fnaf-save-v2", JSON.stringify({
+              night, hour, power, currentCam, lightOn, leftDoorClosed, rightDoorClosed, seconds, customMode, isGoldenFreddyMode,
+              anims: anims.map((a) => ({ name: a.name, pos: a.pos, level: a.level }))
+            }));
           }
 
           function loadGameState() {
-            const save = getSavedState();
-            if (!save) return false;
-            night = save.night;
-            hour = save.hour;
-            power = save.power;
-            currentCam = save.currentCam;
-            lightOn = save.lightOn;
-            leftDoorClosed = !!save.leftDoorClosed;
-            rightDoorClosed = !!save.rightDoorClosed;
-            seconds = save.seconds || 0;
-            anims.forEach((a) => {
-              const saved = save.anims.find((item) => item.name === a.name);
-              if (saved) {
-                a.pos = saved.pos;
-                a.moveChance = saved.moveChance;
-                if (a.type === "freddy") a.patience = saved.patience || 0;
-                if (a.type === "foxy") a.unseenTicks = saved.unseenTicks || 0;
-              }
+            const save = getSavedState(); if (!save) return false;
+            night = save.night; hour = save.hour; power = save.power; currentCam = save.currentCam;
+            lightOn = save.lightOn; leftDoorClosed = !!save.leftDoorClosed; rightDoorClosed = !!save.rightDoorClosed;
+            seconds = save.seconds || 0; customMode = !!save.customMode; isGoldenFreddyMode = !!save.isGoldenFreddyMode;
+            
+            save.anims?.forEach((saved) => {
+              const target = anims.find((item) => item.name === saved.name);
+              if (target) { target.pos = saved.pos; target.level = saved.level || 0; }
             });
+
             document.querySelector(".room").classList.toggle("light-on", lightOn);
-            document
-              .querySelector(".room")
-              .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
+            document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
             lightStateEl.textContent = lightOn ? "On" : "Off";
-            if (leftDoorStateEl)
-              leftDoorStateEl.textContent = leftDoorClosed ? "Closed" : "Open";
-            if (rightDoorStateEl)
-              rightDoorStateEl.textContent = rightDoorClosed ? "Closed" : "Open";
             return true;
           }
 
-          function getPrefs() {
-            try {
-              return JSON.parse(localStorage.getItem("fnaf-prefs")) || {};
-            } catch (e) {
-              return {};
-            }
-          }
-
+          function getPrefs() { try { return JSON.parse(localStorage.getItem("fnaf-prefs-v2")) || {}; } catch (e) { return {}; } }
           function savePrefs() {
-            try {
-              const p = {
-                phoneMuted,
-                customUnlocked,
-                customNight: selectedCustomNight,
-              };
-              localStorage.setItem("fnaf-prefs", JSON.stringify(p));
-            } catch (e) {}
+            try { localStorage.setItem("fnaf-prefs-v2", JSON.stringify({ phoneMuted, goldenFreddyBeaten })); } catch (e) {}
           }
 
-          const phoneGuyLines = [
-            "Hello? Hello? Hey, uh, you're doing great for your first night.",
-            "Um, don't worry too much — just keep an eye on the cameras and conserve power",
-            "The doors will stop animatronics when closed, and the lights will help you see in the office.",
-            "Uh, good luck. It's going to be a long night.",
-          ];
-
-          function showPhoneBubble(text, timeout = 4000) {
-            if (!phoneBubble) return;
-            phoneBubble.textContent = text;
-            phoneBubble.classList.remove("hidden");
-            clearTimeout(phoneBubble._t);
-            phoneBubble._t = setTimeout(
-              () => phoneBubble.classList.add("hidden"),
-              timeout,
-            );
-          }
-
-          function speakLine(text) {
-            if (phoneMuted) return Promise.resolve();
-            return new Promise((resolve) => {
-              showPhoneBubble(text);
-              if (window.speechSynthesis) {
-                const ut = new SpeechSynthesisUtterance(text);
-                ut.rate = 1;
-                ut.pitch = 0.9;
-                ut.onend = () => resolve();
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(ut);
-              } else {
-                setTimeout(resolve, 1600 + Math.min(3000, text.length * 40));
-              }
-            });
-          }
-
-          async function playPhoneGuyIntro() {
-            for (const line of phoneGuyLines) {
-              await speakLine(line);
-              await new Promise((r) => setTimeout(r, 300));
-            }
-            phoneBubble.classList.add("hidden");
-          }
-
-          function setMenuNight() {
-            if (menuNightEl) menuNightEl.textContent = night;
-          }
-
-          function updateMenuButtons() {
-            if (continueBtn) continueBtn.disabled = !hasSavedGame();
-            if (customNightBtn) customNightBtn.disabled = !customUnlocked;
-            if (customNightSelect) customNightSelect.disabled = !customUnlocked;
-            if (customUnlockNote)
-              customUnlockNote.textContent = customUnlocked
-                ? "Custom Night unlocked! Choose a night and start playing."
-                : "Beat Night 5 to unlock Custom Night mode.";
-          }
-
-          function unlockCustomNight() {
-            if (customUnlocked) return;
-            customUnlocked = true;
-            savePrefs();
-            updateMenuButtons();
-          }
-
-          function startNight(startNightNumber = 1, isCustom = false) {
-            customMode = isCustom;
-            night = startNightNumber;
-            hour = 0;
-            seconds = 0;
-            power = 100;
-            currentCam = 0;
-            lightOn = false;
-            leftDoorClosed = false;
-            rightDoorClosed = false;
-            anims.forEach((a) => {
-              a.pos = 0;
+          function startNight(startNightNumber = 1, isCustom = false, customLevels = null) {
+            customMode = isCustom; 
+            night = startNightNumber; 
+            hour = 0; seconds = 0; power = 100; currentCam = 0;
+            lightOn = false; leftDoorClosed = false; rightDoorClosed = false;
+            
+            anims.forEach(a => {
+              a.pos = 2; // stage start location
               if (a.type === "freddy") a.patience = 0;
               if (a.type === "foxy") a.unseenTicks = 0;
             });
-            setNightDifficulty();
+
+            if (isCustom && customLevels) {
+                // Assign explicitly selected level indices 0-20
+                anims.find(a => a.name === "Bonnie").level = customLevels.Bonnie;
+                anims.find(a => a.name === "Chica").level = customLevels.Chica;
+                anims.find(a => a.name === "Freddy").level = customLevels.Freddy;
+                anims.find(a => a.name === "Foxy").level = customLevels.Foxy;
+                anims.find(a => a.type === "golden").level = customLevels.Golden;
+
+                // Derive movement loop scaling calculations directly out of AI Level bounds [0.0 to 0.70]
+                anims.forEach(a => {
+                   a.moveChance = (a.level / 20) * 0.65; 
+                });
+                
+                // Track if this matches 20/20/20/20/20 mode
+                isGoldenFreddyMode = Object.values(customLevels).every(v => v === 20);
+            } else {
+                isGoldenFreddyMode = false;
+                setStandardDifficulty();
+            }
+
             document.body.style.filter = "";
             document.querySelector(".room").classList.remove("light-on", "door-closed");
             if (lightStateEl) lightStateEl.textContent = "Off";
             if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
             if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
-            cameraView.querySelectorAll(".camera").forEach((c, i) => {
-              c.classList.toggle("hidden", i !== 0);
-            });
+            cameraView.querySelectorAll(".camera").forEach((c, i) => c.classList.toggle("hidden", i !== 0));
             camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
             if (mainMenu) mainMenu.classList.add("hidden");
             running = true;
             showActiveCamera();
             renderStatus();
-            startAmbient();
-            if (!isCustom) {
-              setTimeout(() => playPhoneGuyIntro().catch(() => {}), 300);
+
+            if (isGoldenFreddyMode) {
+                showMessage("🚨 MODE: GOLDEN FREDDY 20/20/20/20/20 🚨");
+            } else if (isCustom) {
+                showMessage("Custom Night Configuration Activated.");
             } else {
-              showMessage(`Custom Night ${night} started!`);
+                showPhoneBubble("Keep tabs on the radar map panel to track door hallway line movements!");
             }
           }
 
+          function setStandardDifficulty() {
+            anims.forEach((a) => {
+              if (a.name === "Bonnie") a.moveChance = 0.15 + (night - 1) * 0.05;
+              if (a.name === "Chica") a.moveChance = 0.11 + (night - 1) * 0.05;
+              
+              // Handle campaign movement delays across early night builds
+              if (night < 3) {
+                if (a.type === "freddy" || a.type === "foxy" || a.type === "golden") a.moveChance = 0.0;
+              } else {
+                if (a.name === "Freddy") a.moveChance = 0.10 + (night - 3) * 0.06;
+                if (a.name === "Foxy") a.moveChance = 0.12 + (night - 3) * 0.06;
+                if (a.type === "golden") a.moveChance = 0.03 + (night - 3) * 0.04;
+              }
+              a.level = Math.floor(a.moveChance * 20); // visual estimation match
+            });
+          }
+
           function showActiveCamera() {
-            cameraView
-              .querySelectorAll(".camera")
-              .forEach((c) => c.classList.add("hidden"));
-            const active = cameraView.querySelector(
-              `.camera[data-cam="${currentCam}"]`,
-            );
+            cameraView.querySelectorAll(".camera").forEach((c) => c.classList.add("hidden"));
+            const active = cameraView.querySelector(`.camera[data-cam="${currentCam}"]`);
             if (active) active.classList.remove("hidden");
-            camBtns.forEach((b) =>
-              b.classList.toggle("active", Number(b.dataset.cam) === currentCam),
-            );
+            camBtns.forEach((b) => b.classList.toggle("active", Number(b.dataset.cam) === currentCam));
           }
 
           function openMainMenu() {
             if (mainMenu) mainMenu.classList.remove("hidden");
-            running = false;
-            setMenuNight();
-            updateMenuButtons();
+            running = false; 
+            if (menuNightEl) menuNightEl.textContent = night;
+            if (continueBtn) continueBtn.disabled = !hasSavedGame();
+            victoryStar.style.display = goldenFreddyBeaten ? "block" : "none";
             renderStatus();
-          }
-
-          function closeMenu() {
-            if (mainMenu) mainMenu.classList.add("hidden");
-            running = true;
-            showActiveCamera();
-            renderStatus();
-            startAmbient();
           }
 
           function updateCameraViews() {
             rooms.forEach((_, i) => {
-              const view = document.querySelector(
-                `.camera[data-cam="${i}"] .camera-visitors`
-              );
+              const view = document.querySelector(`.camera[data-cam="${i}"] .camera-visitors`);
               if (!view) return;
-              const visitors = anims.filter((a) => a.pos === i).map((a) => a.name);
-              view.textContent = visitors.length
-                ? `Visitors: ${visitors.join(", ")}`
-                : "Visitors: None";
+              
+              const visitors = anims.filter((a) => {
+                 if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) return false;
+                 if (customMode && a.level === 0) return false;
+                 return a.pos === i;
+              }).map((a) => a.name);
+
+              view.textContent = visitors.length ? `Visitors: ${visitors.join(", ")}` : "Visitors: None";
             });
 
-            const leftDoorVisitors = anims
-              .filter((a) => a.pos === 2 && animSide(a) === "left")
-              .map((a) => a.name);
-            const rightDoorVisitors = anims
-              .filter((a) => a.pos === 2 && animSide(a) === "right")
-              .map((a) => a.name);
-            if (leftDoorStateEl)
-              leftDoorStateEl.textContent = leftDoorVisitors.length
-                ? `Close: ${leftDoorVisitors.join(", ")}`
-                : leftDoorClosed
-                  ? "Closed"
-                  : "Open";
-            if (rightDoorStateEl)
-              rightDoorStateEl.textContent = rightDoorVisitors.length
-                ? `Close: ${rightDoorVisitors.join(", ")}`
-                : rightDoorClosed
-                  ? "Closed"
-                  : "Open";
-            const leftDoorLight = document.getElementById("left-door-light");
-            const rightDoorLight = document.getElementById("right-door-light");
-            if (leftDoorLight)
-              leftDoorLight.classList.toggle(
-                "active",
-                leftDoorVisitors.length > 0 || leftDoorClosed,
-              );
-            if (rightDoorLight)
-              rightDoorLight.classList.toggle(
-                "active",
-                rightDoorVisitors.length > 0 || rightDoorClosed,
-              );
+            const leftDoorVisitors = anims.filter((a) => {
+                if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) return false;
+                return a.pos === 1 && animSide(a) === "left";
+            }).map((a) => a.name);
+
+            const rightDoorVisitors = anims.filter((a) => {
+                if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) return false;
+                return a.pos === 1 && animSide(a) === "right";
+            }).map((a) => a.name);
+
+            if (leftDoorStateEl) leftDoorStateEl.textContent = leftDoorVisitors.length ? `Sighted: ${leftDoorVisitors.join(", ")}` : leftDoorClosed ? "Closed" : "Open";
+            if (rightDoorStateEl) rightDoorStateEl.textContent = rightDoorVisitors.length ? `Sighted: ${rightDoorVisitors.join(", ")}` : rightDoorClosed ? "Closed" : "Open";
 
             const officeVisitors = anims.filter((a) => a.pos >= 3).map((a) => a.name);
-            office.textContent = officeVisitors.length
-              ? `Office — Close: ${officeVisitors.join(", ")}`
-              : "Office";
-
-            rooms.forEach((_, i) => {
-              const overlay = document.querySelector(
-                `.camera[data-cam="${i}"] .camera-overlay`
-              );
-              if (!overlay) return;
-              overlay.innerHTML = "";
-              const icons = anims
-                .filter((a) => a.pos === i)
-                .map((a) => {
-                  const s = document.createElement("span");
-                  s.className = "anim-icon";
-                  s.textContent = animEmoji(a);
-                  return s;
-                });
-              icons.forEach((n) => overlay.appendChild(n));
-            });
+            office.textContent = officeVisitors.length ? `Office Threat: ${officeVisitors.join(", ")}` : "Office Secure";
           }
 
-          function setNightDifficulty() {
-            anims.forEach((a) => {
-              if (a.name === "Bonnie") a.moveChance = 0.18 + (night - 1) * 0.06;
-              if (a.name === "Chica") a.moveChance = 0.12 + (night - 1) * 0.06;
-              if (a.name === "Freddy") a.moveChance = 0.14 + (night - 1) * 0.05;
-              if (a.name === "Foxy") a.moveChance = 0.13 + (night - 1) * 0.05;
-              if (a.type === "golden") a.moveChance = 0.04 + (night - 1) * 0.05;
-            });
-          }
-
-          function advanceNight() {
-            showMessage(`Night ${night} complete! Starting Night ${night + 1}...`);
-            night += 1;
-            hour = 0;
-            seconds = 0;
-            power = 100;
-            currentCam = 0;
-            lightOn = false;
-            leftDoorClosed = false;
-            rightDoorClosed = false;
-            anims.forEach((a) => {
-              a.pos = 0;
-              if (a.type === "freddy") a.patience = 0;
-              if (a.type === "foxy") a.unseenTicks = 0;
-            });
-            setNightDifficulty();
-            document.querySelector(".room").classList.remove("light-on", "door-closed");
-            lightStateEl.textContent = "Off";
-            if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
-            if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
-            cameraView.querySelectorAll(".camera").forEach((c, i) => {
-              c.classList.toggle("hidden", i !== 0);
-            });
-            camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
-            renderStatus();
-            updateCameraViews();
+          function showPhoneBubble(text) {
+            if (phoneMuted || !phoneBubble) return;
+            phoneBubble.textContent = text; phoneBubble.classList.remove("hidden");
+            setTimeout(() => phoneBubble.classList.add("hidden"), 4000);
           }
 
           function showMessage(text) {
-            message.textContent = text;
-            message.classList.remove("hidden");
-            setTimeout(() => message.classList.add("hidden"), 2500);
+            message.textContent = text; message.classList.remove("hidden");
+            setTimeout(() => message.classList.add("hidden"), 3000);
           }
 
-          camBtns.forEach((btn) =>
-            btn.addEventListener("click", () => {
-              if (!running) return;
-              currentCam = Number(btn.dataset.cam);
-              showActiveCamera();
-              power -= 0.2; 
-              renderStatus();
-              playClick();
-            }),
-          );
-
-          newGameBtn?.addEventListener("click", () => {
-            startNight(1, false);
+          // Trigger Custom Nights 
+          customLaunchBtn.addEventListener("click", () => {
+             const configurations = {
+                Bonnie: Number(aiSelectors.Bonnie.value),
+                Chica: Number(aiSelectors.Chica.value),
+                Freddy: Number(aiSelectors.Freddy.value),
+                Foxy: Number(aiSelectors.Foxy.value),
+                Golden: Number(aiSelectors.Golden.value)
+             };
+             startNight(6, true, configurations);
           });
 
-          continueBtn?.addEventListener("click", () => {
-            if (loadGameState()) {
-              customMode = false;
-              closeMenu();
-            } else {
-              showMessage("No saved night found.");
-            }
+          // 20/20/20/20/20 Ultimate Trigger Preset
+          goldenModeBtn.addEventListener("click", () => {
+             Object.values(aiSelectors).forEach(select => select.value = 20);
+             startNight(7, true, { Bonnie: 20, Chica: 20, Freddy: 20, Foxy: 20, Golden: 20 });
           });
 
-          customNightBtn?.addEventListener("click", () => {
-            const target = Number(customNightSelect?.value || 1);
-            selectedCustomNight = target;
-            startNight(target, true);
-          });
+          camBtns.forEach(btn => btn.addEventListener("click", () => {
+             if (!running) return;
+             currentCam = Number(btn.dataset.cam); showActiveCamera(); power -= 0.1; renderStatus();
+          }));
 
-          customNightSelect?.addEventListener("change", () => {
-            selectedCustomNight = Number(customNightSelect.value);
-            savePrefs();
-          });
+          newGameBtn?.addEventListener("click", () => startNight(1, false));
+          continueBtn?.addEventListener("click", () => { if (loadGameState()) { openMainMenu(); mainMenu.classList.add("hidden"); running = true; showActiveCamera(); renderStatus(); } });
+          menuBtn?.addEventListener("click", () => { document.getElementById("jumpscare").classList.add("hidden"); openMainMenu(); });
+          restartBtn?.addEventListener("click", () => { document.getElementById("jumpscare").classList.add("hidden"); startNight(night, customMode, customMode ? { Bonnie: Number(aiSelectors.Bonnie.value), Chica: Number(aiSelectors.Chica.value), Freddy: Number(aiSelectors.Freddy.value), Foxy: Number(aiSelectors.Foxy.value), Golden: Number(aiSelectors.Golden.value) } : null); });
 
-          menuBtn?.addEventListener("click", () => {
-            hideJumpscare();
-            openMainMenu();
-          });
-
-          phoneCallBtn?.addEventListener("click", () => {
-            playPhoneGuyIntro().catch(() => {});
-          });
-
-          phoneMuteBtn?.addEventListener("click", () => {
-            phoneMuted = !phoneMuted;
-            phoneMuteBtn.classList.toggle("muted", phoneMuted);
-            phoneMuteBtn.textContent = phoneMuted
-              ? "Unmute Phone Guy"
-              : "Mute Phone Guy";
-            if (phoneMuted && window.speechSynthesis) window.speechSynthesis.cancel();
-            savePrefs();
-          });
-
-          let lightOn = false;
-          let leftDoorClosed = false;
-          let rightDoorClosed = false;
-
-          toggleLight.addEventListener("click", () => {
-            if (!running) return;
-            lightOn = !lightOn;
-            document.querySelector(".room").classList.toggle("light-on", lightOn);
-            lightStateEl.textContent = lightOn ? "On" : "Off";
-            renderStatus();
-            playClick();
-          });
-
-          toggleLeftDoor?.addEventListener("click", () => {
-            if (!running) return;
-            leftDoorClosed = !leftDoorClosed;
-            document
-              .querySelector(".room")
-              .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
-            if (leftDoorStateEl)
-              leftDoorStateEl.textContent = leftDoorClosed ? "Closed" : "Open";
-            renderStatus();
-            playClick();
-          });
-
-          toggleRightDoor?.addEventListener("click", () => {
-            if (!running) return;
-            rightDoorClosed = !rightDoorClosed;
-            document
-              .querySelector(".room")
-              .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
-            if (rightDoorStateEl)
-              rightDoorStateEl.textContent = rightDoorClosed ? "Closed" : "Open";
-            renderStatus();
-            playClick();
-          });
+          toggleLight.addEventListener("click", () => { if (!running) return; lightOn = !lightOn; document.querySelector(".room").classList.toggle("light-on", lightOn); lightStateEl.textContent = lightOn ? "On" : "Off"; renderStatus(); });
+          toggleLeftDoor?.addEventListener("click", () => { if (!running) return; leftDoorClosed = !leftDoorClosed; document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed); renderStatus(); });
+          toggleRightDoor?.addEventListener("click", () => { if (!running) return; rightDoorClosed = !rightDoorClosed; document.querySelector(".room").classList.toggle("door-closed", leftDoorClosed || rightDoorClosed); renderStatus(); });
 
           function checkLose() {
             for (const a of anims) {
-              if (a.pos >= 3) {
-                const side = animSide(a);
-                const blocked = side === "left" ? leftDoorClosed : rightDoorClosed;
-                if (!blocked && !lightOn) {
-                  lose(a.name);
+              if (a.pos === 3 && (lightOn || currentCam !== null)) {
+                  running = false;
+                  document.getElementById("jumpscare-text").innerHTML = `⚡ ${a.name.toUpperCase()} JUMPSCARE! ⚡<br><span style='font-size:16px;color:#666;'>FAILED AT ${hour === 0 ? 12 : hour} AM</span>`;
+                  document.getElementById("jumpscare").classList.remove("hidden");
+                  document.getElementById("end-controls").classList.remove("hidden");
                   return true;
-                }
-                if (!blocked && lightOn) {
-                  if (a.type === "golden" && night === 5) {
-                    lose(goldenLoreName());
-                  } else {
-                    lose(a.name);
-                  }
-                  return true;
-                }
               }
             }
             return false;
           }
 
-          function lose(name) {
-            running = false;
-            stopAmbient();
-            showMessage("GAME OVER: Caught by " + name);
-            document.body.style.filter = "brightness(0.4)";
-            triggerJumpscare(name);
-          }
-
-          function win() {
-            running = false;
-            stopAmbient();
-            if (customMode) {
-              showMessage(`You survived Custom Night ${night}!`);
-              document.body.style.filter = "brightness(1.2)";
-              document.getElementById("end-controls").classList.remove("hidden");
-              return;
-            }
-
-            if (night === 5) {
-              unlockCustomNight();
-              showMessage("You survived Night 5! Custom Night unlocked.");
-              document.body.style.filter = "brightness(1.2)";
-              document.getElementById("end-controls").classList.remove("hidden");
-              return;
-            }
-
-            showMessage("You survived the night! You win!");
-            document.body.style.filter = "brightness(1.2)";
-            document.getElementById("end-controls").classList.remove("hidden");
-          }
-
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          const audioCtx = new AudioCtx();
-          let ambientOsc;
-          let ambientAudio = null;
-          let clickAudio = null;
-          let jumpscareAudio = null;
-          const jumpscareImg = document.getElementById("jumpscare-img");
-          const jumpscareText = document.getElementById("jumpscare-text");
-          const restartBtn = document.getElementById("restart-btn");
-
-          function playTone(freq = 440, time = 0.12, type = "sine", volume = 0.08) {
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.type = type;
-            o.frequency.value = freq;
-            g.gain.value = volume;
-            o.connect(g);
-            g.connect(audioCtx.destination);
-            o.start();
-            o.stop(audioCtx.currentTime + time);
-          }
-
-          function startAmbient() {
-            if (ambientAudio) {
-              ambientAudio.loop = true;
-              ambientAudio.volume = 0.25;
-              ambientAudio.play().catch(() => {});
-              return;
-            }
-            try {
-              ambientOsc = audioCtx.createOscillator();
-              const g = audioCtx.createGain();
-              ambientOsc.type = "sine";
-              ambientOsc.frequency.value = 60;
-              g.gain.value = 0.008;
-              ambientOsc.connect(g);
-              g.connect(audioCtx.destination);
-              ambientOsc.start();
-            } catch (e) {}
-          }
-
-          function stopAmbient() {
-            if (ambientOsc) { try { ambientOsc.stop(); } catch(e){} }
-            if (ambientAudio) {
-              try {
-                ambientAudio.pause();
-                ambientAudio.currentTime = 0;
-              } catch (e) {}
-            }
-          }
-
-          function triggerJumpscare(kind) {
-            stopAmbient();
-            if (jumpscareAudio) {
-              jumpscareAudio.volume = 0.18;
-              jumpscareAudio.play().catch(() => {});
-            } else {
-              playTone(60, 0.4, "sawtooth", 0.1);
-              playTone(420, 0.8, "sawtooth", 0.04);
-              playTone(1400, 0.18, "square", 0.03);
-            }
-            const j = document.getElementById("jumpscare");
-            if (kind && kind.toLowerCase().includes("golden")) showStatic(900);
-            j.classList.toggle("jumpscare-golden", !!(kind && kind.toLowerCase().includes("golden")));
-            
-            jumpscareText.textContent = kind ? `${kind.toUpperCase()} ATTACKED!` : "JUMPSCARED!";
-            j.classList.remove("hidden");
-            j.setAttribute("aria-hidden", "false");
-            document.getElementById("end-controls").classList.remove("hidden");
-          }
-
-          function hideJumpscare() {
-            const j = document.getElementById("jumpscare");
-            j.classList.add("hidden");
-            j.setAttribute("aria-hidden", "true");
-            document.getElementById("end-controls").classList.add("hidden");
-          }
-
-          restartBtn?.addEventListener("click", () => {
-            hideJumpscare();
-            startNight(night, customMode);
-          });
-
-          async function tryLoadAsset(url) {
-            try {
-              const res = await fetch(url, { cache: "no-cache" });
-              if (!res.ok) return null;
-              const blob = await res.blob();
-              return URL.createObjectURL(blob);
-            } catch (e) { return null; }
-          }
-
-          (async function loadAssets() {
-            const base = "assets/";
-            const amb = await tryLoadAsset(base + "ambient.mp3");
-            if (amb) ambientAudio = new Audio(amb);
-            const clk = await tryLoadAsset(base + "click.mp3");
-            if (clk) { clickAudio = new Audio(clk); clickAudio.volume = 0.6; }
-            const js = await tryLoadAsset(base + "jumpscare.mp3");
-            if (js) { jumpscareAudio = new Audio(js); jumpscareAudio.volume = 0.45; }
-            const img = await tryLoadAsset(base + "jumpscare.png");
-            if (img && jumpscareImg) jumpscareImg.src = img;
-          })();
-
-          function playClick() {
-            if (clickAudio) {
-              clickAudio.currentTime = 0;
-              clickAudio.play().catch(() => {});
-            } else playTone(1200, 0.06, "square", 0.04);
-          }
-
           function gameTick() {
             if (!running) return;
             seconds += 1;
-            const secondsPerHour = 10; 
-            if (seconds % secondsPerHour === 0) {
-              hour = Math.min(6, hour + 1);
-              anims.forEach((a) => (a.moveChance = Math.min(0.6, a.moveChance + 0.03)));
-            }
+            if (seconds % 12 === 0) hour = Math.min(6, hour + 1);
 
             let drain = 0.05;
             if (lightOn) drain += 0.35;
-            if (leftDoorClosed || rightDoorClosed) drain += 0.15;
-            if (currentCam !== null) drain += 0.12;
+            if (leftDoorClosed || rightDoorClosed) drain += 0.18;
             power -= drain;
-            if (power <= 0) {
-              power = 0;
-              lose("Power Loss");
-            }
+            
+            if (power <= 0) { running = false; alert("Total System Power Blackout Outage!"); openMainMenu(); return; }
 
             for (const a of anims) {
-              if (a.type === "freddy") {
-                if (currentCam === 2 && a.pos >= 2) {
-                  if (Math.random() < 0.55) {
-                    a.pos = Math.max(0, a.pos - 1);
-                    a.patience = 0;
+              // Ignore calculation evaluations entirely if AI tier is set to 0
+              if (customMode && a.level === 0) { a.pos = 2; continue; }
+              if (!customMode && night < 3 && (a.type === "freddy" || a.type === "foxy" || a.type === "golden")) { a.pos = 2; continue; }
+
+              // Halting calculations logic inside room doors (pos 1)
+              if (a.type === "standard") {
+                let doorClosed = (animSide(a) === "left") ? leftDoorClosed : rightDoorClosed;
+                if (a.pos === 1) {
+                  if (doorClosed) {
+                    if (Math.random() < 0.32) { showMessage(`${a.name} bounced off the closed iron door.`); a.pos = 2; }
+                  } else {
+                    if (Math.random() < 0.28) { a.pos = 3; showMessage(`Warning: Heavy dynamic footsteps located in Office.`); }
                   }
                   continue;
                 }
-                if (currentCam !== 2) {
-                  a.patience = Math.min(5, a.patience + 1);
-                }
-                const freddyChance = a.moveChance + hour * 0.03 + a.patience * 0.04;
-                if (Math.random() < freddyChance) {
-                  a.pos = Math.min(3, a.pos + 1);
-                  a.patience = 0;
-                }
-                if (((animSide(a) === "left" && leftDoorClosed) || (animSide(a) === "right" && rightDoorClosed)) && a.pos >= 3) {
-                  a.pos = 2;
-                }
-                continue;
               }
 
+              // Foxy Run Patterns
               if (a.type === "foxy") {
-                if (currentCam === 1 && a.pos >= 1) {
-                  if (Math.random() < 0.4) a.pos = Math.max(0, a.pos - 1);
-                  a.unseenTicks = 0;
-                } else {
-                  a.unseenTicks = Math.min(6, a.unseenTicks + 1);
-                }
-                const foxyChance = a.moveChance + hour * 0.04 + a.unseenTicks * 0.05;
-                if (Math.random() < foxyChance) a.pos = Math.min(3, a.pos + 1);
-                if (((animSide(a) === "left" && leftDoorClosed) || (animSide(a) === "right" && rightDoorClosed)) && a.pos >= 3) {
-                  a.pos = 2;
+                if (currentCam === 1) a.unseenTicks = 0; else a.unseenTicks = Math.min(6, a.unseenTicks + 1);
+                if (Math.random() < (a.moveChance + a.unseenTicks * 0.04)) {
+                    if (a.pos === 2) a.pos = 0;
+                    else if (a.pos === 0) a.pos = 1;
+                    else if (a.pos === 1) {
+                        if (leftDoorClosed || rightDoorClosed) { a.pos = 2; showStatic(600); showMessage("Foxy banged loudly against your office defenses!"); }
+                        else a.pos = 3;
+                    }
                 }
                 continue;
               }
 
-              if (currentCam !== null && a.pos === currentCam) {
-                if (Math.random() < 0.45) {
-                  a.pos = Math.max(0, a.pos - 1);
-                  continue;
-                }
-              }
-
-              let effectiveChance = a.moveChance + hour * 0.03;
-              if (a.type === "standard") {
-                if (currentCam === a.pos) effectiveChance -= 0.12;
-                else effectiveChance += 0.08;
-              }
-              if (a.type === "golden") {
-                effectiveChance += (night - 1) * 0.02;
-              }
-
-              if (Math.random() < Math.max(0, effectiveChance)) {
-                a.pos = Math.min(3, a.pos + 1);
-              }
-              if (Math.random() < 0.02) a.pos = Math.max(0, a.pos - 1);
-
-              if (a.type === "golden" && a.pos >= 3) {
-                if (night === 5) {
-                  showMessage(`${goldenLoreName()} has fully possessed the suit on Night 5!`);
-                  lose(goldenLoreName());
-                  return;
-                }
-                if (Math.random() < 0.6) {
-                  lose(a.name);
-                  return;
-                } else {
-                  showMessage("Golden Freddy vanished...");
-                  a.pos = 0;
-                  continue;
-                }
+              // Base Random Path Walking Coordinates Loop
+              let scaleChance = a.moveChance + (hour * 0.02);
+              if (Math.random() < scaleChance) {
+                if (a.pos === 2) a.pos = 0;
+                else if (a.pos === 0) a.pos = 1;
+                else if (a.pos === 1) a.pos = 3;
               }
             }
 
             if (hour >= 6) {
-              if (night < 5) { advanceNight(); return; }
-              win(); return;
+              running = false;
+              if (isGoldenFreddyMode) {
+                  goldenFreddyBeaten = true;
+                  showMessage("👑 CHOSEN ONE ENTIRELY CLEARED! 20/20/20/20/20 BEATEN! 👑");
+              } else if (night < 5) {
+                  night += 1; showMessage(`Survison Clear! Moving up to Night ${night}`); startNight(night, false); return;
+              } else {
+                  showMessage("Standard Operational Campaign Victorious!");
+              }
+              openMainMenu(); return;
             }
 
             renderStatus();
             checkLose();
           }
 
-          cameraView.querySelectorAll(".camera").forEach((c, i) => {
-            if (i !== 0) c.classList.add("hidden");
-          });
-
-          (function initPrefs() {
+          // Startup Initializations
+          (() => {
             const p = getPrefs();
             phoneMuted = !!p.phoneMuted;
-            customUnlocked = !!p.customUnlocked;
-            selectedCustomNight = p.customNight || 1;
-            if (phoneMuteBtn) {
-              phoneMuteBtn.classList.toggle("muted", phoneMuted);
-              phoneMuteBtn.textContent = phoneMuted ? "Unmute Phone Guy" : "Mute Phone Guy";
-            }
-            if (customNightSelect) customNightSelect.value = String(selectedCustomNight);
-            updateMenuButtons();
+            goldenFreddyBeaten = !!p.goldenFreddyBeaten;
+            openMainMenu();
           })();
-
-          openMainMenu();
-
-          window.addEventListener("keydown", (e) => {
-            if (!running) return;
-            if (e.key === "l" || e.key === "L") toggleLight.click();
-            if (e.key === "d" || e.key === "D") {
-              if (toggleLeftDoor) toggleLeftDoor.click();
-              if (toggleRightDoor) toggleRightDoor.click();
-            }
-            if (["1", "2", "3"].includes(e.key)) {
-              const idx = Number(e.key) - 1;
-              const btn = Array.from(camBtns)[idx];
-              if (btn) btn.click();
-            }
-          });
-
+          
           setInterval(gameTick, 1000);
-          renderStatus();
-          window.__FNAF = { anims };
         })();
     </script>
 </body>
