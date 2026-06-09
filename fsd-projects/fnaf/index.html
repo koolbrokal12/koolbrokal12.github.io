@@ -1,122 +1,1130 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>FNAF-like Mini Game</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Five Nights at Coder's</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            font-size: 20px;
+            color: #333;
+            margin: 5px 0;
+            letter-spacing: 3px;
+        }
+
+        /* --- Main Game Frame --- */
+        #game-screen {
+            position: relative;
+            width: 500px;
+            height: 600px;
+            background: #111;
+            border: 4px solid #222;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        /* --- Main Menu Overlay --- */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #main-menu.hidden { display: none !important; }
+        .menu-title { font-family: 'Impact', sans-serif; font-size: 36px; color: #ff3333; margin-bottom: 5px; }
+        .menu-subtitle { font-size: 14px; color: #666; margin-bottom: 30px; }
+        .menu-btn {
+            background: #151515; color: #aaa; border: 1px solid #333;
+            padding: 10px 20px; margin: 5px; width: 220px; cursor: pointer;
+            font-family: inherit; font-size: 14px; transition: 0.2s;
+        }
+        .menu-btn:hover:not(:disabled) { background: #ff3333; color: #fff; border-color: #ff3333; }
+        .menu-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #custom-unlock-note { font-size: 11px; color: #444; max-width: 250px; margin-top: 10px; }
+        #custom-night-select { background: #222; color: #fff; border: 1px solid #444; padding: 5px; margin-top: 5px; }
+
+        /* --- HUD Display --- */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 16px;
+            border: 1px solid #222;
+        }
+        #time { color: #00ffcc; font-weight: bold; }
+        #power { color: #ffcc00; font-weight: bold; }
+
+        /* --- Central Workspace: Office & Cameras --- */
+        #workspace {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            margin: 15px 0;
+            gap: 10px;
+        }
+
+        #player-office {
+            background: #1c1c1c;
+            border: 2px solid #333;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #ff5555;
+            text-transform: uppercase;
+            border-radius: 4px;
+        }
+
+        /* Camera Feed Display Box */
+        #camera-view {
+            position: relative;
+            height: 200px;
+            background: #080808;
+            border: 2px solid #222;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .camera { width: 100%; height: 100%; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; }
+        .camera.hidden { display: none !important; }
+        .camera-title { font-size: 14px; color: #888; position: absolute; top: 10px; left: 10px; }
+        .camera-visitors { font-size: 13px; color: #fff; margin-bottom: 10px; }
+        .camera-overlay { display: flex; gap: 8px; font-size: 24px; margin-top: 5px; }
+
+        /* Camera Switching Interface */
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+        .cam-btn {
+            background: #222; color: #888; border: 1px solid #444;
+            padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 12px;
+            border-radius: 3px;
+        }
+        .cam-btn.active { background: #00ffcc; color: #000; border-color: #00ffcc; font-weight: bold; }
+
+        /* --- Room Dynamic Environment Lighting (Modified by JS Classes) --- */
+        .room { transition: background 0.1s; }
+        .room.light-on { background: #3a3a2a !important; border-color: #ffcc00 !important; }
+        .room.door-closed { border-style: dashed; }
+
+        /* --- Physical Safety Controls --- */
+        .office-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .control-btn {
+            background: #251010; color: #ff6666; border: 1px solid #552222;
+            padding: 10px; font-family: inherit; cursor: pointer; font-size: 13px;
+            border-radius: 4px; text-transform: uppercase;
+        }
+        .control-btn:hover { background: #401a1a; }
+        #toggle-light { background: #252510; color: #ffcc00; border-color: #555522; }
+        #toggle-light:hover { background: #40401a; }
+
+        /* --- Bottom Utility Row (Phone Guy & Master Menu Return) --- */
+        .utility-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .util-btn {
+            background: #111; color: #666; border: 1px solid #222;
+            padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: inherit;
+        }
+        .util-btn:hover { color: #fff; border-color: #444; }
+
+        /* --- Toast Alert Messages --- */
+        #message {
+            position: absolute;
+            top: 60px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); border: 1px solid #ff3333; color: #ff3333;
+            padding: 8px 16px; font-size: 12px; z-index: 50; border-radius: 4px;
+            text-align: center; max-width: 80%;
+        }
+        #message.hidden { display: none; }
+
+        /* --- Subtitle Bubble for Audio --- */
+        #phone-bubble {
+            position: absolute;
+            bottom: 60px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85); border: 1px solid #00ffcc; color: #fff;
+            padding: 10px; font-size: 12px; z-index: 40; border-radius: 4px;
+            text-align: center; width: 85%; box-sizing: border-box;
+        }
+        #phone-bubble.hidden { display: none; }
+
+        /* --- Jumpscare Screen Modals --- */
+        #jumpscare {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 90;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #jumpscare.hidden { display: none !important; }
+        #jumpscare-text { font-family: 'Impact', sans-serif; font-size: 48px; color: #ff0000; letter-spacing: 5px; animation: shake 0.1s infinite; }
+        #jumpscare-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #jumpscare.jumpscare-golden #jumpscare-text { color: #ffcc00; text-shadow: 0 0 10px #fff; }
+
+        /* Post-Run Overlay Controls */
+        #end-controls {
+            position: absolute; bottom: 40px; display: flex; gap: 10px; z-index: 95;
+        }
+        #end-controls.hidden { display: none !important; }
+
+        /* Static Camera Screen Noise effect overlay */
+        #static-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.15); opacity: 0; pointer-events: none; z-index: 20;
+        }
+        #static-overlay.active { opacity: 1; animation: noise 0.05s infinite; }
+
+        @keyframes shake {
+            0% { transform: translate(2px, 2px); }
+            50% { transform: translate(-2px, -2px); }
+            100% { transform: translate(1px, -1px); }
+        }
+        @keyframes noise {
+            0% { background: rgba(255,255,255,0.15); }
+            50% { background: rgba(200,200,200,0.25); }
+            100% { background: rgba(255,255,255,0.1); }
+        }
+    </style>
 </head>
-
 <body>
-  <div id="main-menu" class="menu-overlay">
-    <div class="menu-panel">
-      <h2>Five Nights at Freddy's</h2>
-      <div class="animatronic-row">
-        <span>🐰 Bonnie</span>
-        <span>🪕 Chica</span>
-        <span>🐻 Freddy</span>
-        <span>🦊 Foxy</span>
-      </div>=
-      <div class="menu-night">Night <span id="menu-night">1</span></div>
-      <div class="menu-buttons">
-        <button id="new-game-btn">New Game</button>
-        <button id="continue-btn">Continue</button>
-        <button id="custom-night-btn" disabled>Custom Night</button>
-      </div>
-      <div class="menu-hint">Continue resumes your last night if available.</div>
-      <div class="menu-hint">
-        <label for="custom-night-select">Choose Custom Night:</label>
-        <select id="custom-night-select" disabled>
-          <option value="1">Night 1</option>
-          <option value="2">Night 2</option>
-          <option value="3">Night 3</option>
-          <option value="4">Night 4</option>
-          <option value="5">Night 5</option>
-        </select>
-      </div>
-      <div id="custom-unlock-note" class="menu-hint">Beat Night 5 to unlock Custom Night mode.</div>
-    </div>
-  </div>
 
-  <main id="game">
-    <header>
-      <h1>FNAF-like Mini Game</h1>
-      <div class="status">
-        <div>Night: <span id="night">1</span></div>
-        <div>Time: <span id="time">12 AM</span></div>
-        <div>Power: <span id="power">100%</span></div>
-        <div>Camera: <span id="camera">Cam 1</span></div>
-      </div>
-    </header>
+    <h1>SECURITY SYSTEM TERMINAL</h1>
 
-    <div class="instructions">
-      Use the camera buttons, light, and door to survive until 6 AM.
-    </div>
+    <div id="game-screen">
+        <div id="static-overlay"></div>
 
-    <section class="top-row">
-      <div id="office" class="room">
-        <div id="player-office">Office</div>
-        <div class="door-indicators">
-          <div id="left-door-indicator">Left Door: <span id="left-door-state">Open</span> <span id="left-door-light"
-              class="door-light"></span></div>
-          <div id="right-door-indicator">Right Door: <span id="right-door-state">Open</span> <span id="right-door-light"
-              class="door-light"></span></div>
-        </div>
-        <div id="light-indicator">Light: <span id="light-state">Off</span></div>
-      </div>
+        <div id="message" class="hidden"></div>
+        <div id="phone-bubble" class="hidden"></div>
 
-      <div class="controls">
-        <div class="cameras">
-          <button class="cam-btn" data-cam="0">Cam 1</button>
-          <button class="cam-btn" data-cam="1">Cam 2</button>
-          <button class="cam-btn" data-cam="2">Cam 3</button>
+        <div id="jumpscare" class="hidden" aria-hidden="true">
+            <div id="jumpscare-text">JUMPSCARE</div>
+            <img id="jumpscare-img" class="hidden" alt="Jumpscare Asset">
+            <div id="end-controls" class="hidden">
+                <button id="restart-btn" class="menu-btn" style="width: 120px;">Try Again</button>
+                <button id="menu-btn" class="menu-btn" style="width: 120px;">Main Menu</button>
+            </div>
         </div>
 
-        <div class="toggles">
-          <button id="toggle-light">Light</button>
-          <button id="toggle-left-door">Left Door</button>
-          <button id="toggle-right-door">Right Door</button>
+        <div id="main-menu">
+            <div class="menu-title">FIVE NIGHTS AT CODER'S</div>
+            <div class="menu-subtitle">Night <span id="menu-night">1</span> Security Feed</div>
+            
+            <button id="new-game-btn" class="menu-btn">New Game (Night 1)</button>
+            <button id="continue-btn" class="menu-btn">Continue Saved Game</button>
+            
+            <hr style="width: 60%; border-color: #222; margin: 15px 0;">
+            
+            <button id="custom-night-btn" class="menu-btn">Start Custom Night</button>
+            <select id="custom-night-select">
+                <option value="1">Night 1</option>
+                <option value="2">Night 2</option>
+                <option value="3">Night 3</option>
+                <option value="4">Night 4</option>
+                <option value="5">Night 5</option>
+            </select>
+            <div id="custom-unlock-note">Beat Night 5 to unlock Custom Night mode.</div>
         </div>
-        <div class="phone-panel">
-          <button id="phone-call-btn">Phone</button>
-          <button id="phone-mute-btn">Mute Phone Guy</button>
-          <div id="phone-bubble" class="hidden" aria-live="polite"></div>
+
+        <div class="hud">
+            <div>TIME: <span id="time">12 AM</span> (NIGHT <span id="night">1</span>)</div>
+            <div>POWER: <span id="power">100%</span></div>
         </div>
-      </div>
-    </section>
 
-    <section class="camera-view" id="camera-view">
-      <div class="camera" data-cam="0">
-        <div class="camera-title">Camera 1 — Storage</div>
-        <div class="camera-visitors">Visitors: None</div>
-        <div class="camera-overlay"></div>
-      </div>
-      <div class="camera" data-cam="1">
-        <div class="camera-title">Camera 2 — Hallway</div>
-        <div class="camera-visitors">Visitors: None</div>
-        <div class="camera-overlay"></div>
-      </div>
-      <div class="camera" data-cam="2">
-        <div class="camera-title">Camera 3 — Stage</div>
-        <div class="camera-visitors">Visitors: None</div>
-        <div class="camera-overlay"></div>
-      </div>
-    </section>
+        <div id="workspace">
+            <div id="player-office" class="room">Office</div>
 
-    <div id="message" class="hidden"></div>
-    <div id="jumpscare" class="hidden" role="dialog" aria-hidden="true">
-      <img id="jumpscare-img" class="hidden" alt="jumpscare image">
-      <div id="jumpscare-text">JUMPSCARE!</div>
+            <div id="camera-view">
+                <div class="camera" data-cam="0">
+                    <div class="camera-title">CAM 1: Storage Room</div>
+                    <div class="camera-visitors">Visitors: None</div>
+                    <div class="camera-overlay"></div>
+                </div>
+                <div class="camera hidden" data-cam="1">
+                    <div class="camera-title">CAM 2: Hallway Corridor</div>
+                    <div class="camera-visitors">Visitors: None</div>
+                    <div class="camera-overlay"></div>
+                </div>
+                <div class="camera hidden" data-cam="2">
+                    <div class="camera-title">CAM 3: Main Stage Assembly</div>
+                    <div class="camera-visitors">Visitors: None</div>
+                    <div class="camera-overlay"></div>
+                </div>
+            </div>
+
+            <div class="camera-controls">
+                <button class="cam-btn active" data-cam="0">Cam 1</button>
+                <button class="cam-btn" data-cam="1">Cam 2</button>
+                <button class="cam-btn" data-cam="2">Cam 3</button>
+                <span id="camera" style="display:none;">Cam 1</span>
+            </div>
+        </div>
+
+        <div class="office-controls">
+            <button id="toggle-left-door" class="control-btn">Left Door <br><span id="left-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
+            <button id="toggle-light" class="control-btn">Office Flashlight <br><span id="light-state" style="font-size:10px; opacity:0.7;">Off</span></button>
+            <button id="toggle-right-door" class="control-btn">Right Door <br><span id="right-door-state" style="font-size:10px; opacity:0.7;">Open</span></button>
+        </div>
+
+        <div id="left-door-light" style="display:none;"></div>
+        <div id="right-door-light" style="display:none;"></div>
+
+        <div class="utility-row">
+            <div>
+                <button id="phone-call-btn" class="util-btn">Replay Instructions</button>
+                <button id="phone-mute-btn" class="util-btn">Mute Phone Guy</button>
+            </div>
+            <div style="font-size: 10px; color: #444;">[1-3] Cams | [L] Light | [D] Doors</div>
+        </div>
     </div>
-    <div id="static-overlay" class="static-overlay hidden" aria-hidden="true"></div>
-    <div id="end-controls" class="hidden">
-      <button id="restart-btn">Restart Night</button>
-      <button id="menu-btn">Back to Menu</button>
-    </div>
-  </main>
 
-  <script src="game.js"></script>
+    <script>
+        (() => {
+          const timeEl = document.getElementById("time");
+          const powerEl = document.getElementById("power");
+          const cameraView = document.getElementById("camera-view");
+          const camBtns = document.querySelectorAll(".cam-btn");
+          const toggleLight = document.getElementById("toggle-light");
+          const toggleLeftDoor = document.getElementById("toggle-left-door");
+          const toggleRightDoor = document.getElementById("toggle-right-door");
+          const leftDoorStateEl = document.getElementById("left-door-state");
+          const rightDoorStateEl = document.getElementById("right-door-state");
+          const lightStateEl = document.getElementById("light-state");
+          const message = document.getElementById("message");
+          const office = document.getElementById("player-office");
+          const cameraLabel = document.getElementById("camera");
+          const nightEl = document.getElementById("night");
+          const mainMenu = document.getElementById("main-menu");
+          const newGameBtn = document.getElementById("new-game-btn");
+          const continueBtn = document.getElementById("continue-btn");
+          const customNightBtn = document.getElementById("custom-night-btn");
+          const customNightSelect = document.getElementById("custom-night-select");
+          const customUnlockNote = document.getElementById("custom-unlock-note");
+          const menuNightEl = document.getElementById("menu-night");
+          const phoneCallBtn = document.getElementById("phone-call-btn");
+          const phoneMuteBtn = document.getElementById("phone-mute-btn");
+          const phoneBubble = document.getElementById("phone-bubble");
+          const menuBtn = document.getElementById("menu-btn");
+
+          let currentCam = 0;
+          let power = 100;
+          let hour = 0; 
+          let night = 1;
+          let running = false;
+          let seconds = 0;
+          let phoneMuted = false;
+          let customUnlocked = false;
+          let customMode = false;
+          let selectedCustomNight = 1;
+
+          const rooms = ["Storage", "Hallway", "Stage"];
+
+          const anims = [
+            { name: "Bonnie", pos: 1, moveChance: 0.22, type: "standard" },
+            { name: "Chica", pos: 1, moveChance: 0.18, type: "standard" },
+            { name: "Freddy", pos: 0, moveChance: 0.1, type: "freddy", patience: 0 },
+            { name: "Foxy", pos: 1, moveChance: 0.18, type: "foxy", unseenTicks: 0 },
+            { name: "Golden Freddy", pos: 0, moveChance: 0.04, type: "golden" },
+          ];
+
+          function animSide(a) {
+            const right = ["Bonnie", "Foxy"];
+            return right.includes(a.name) ? "right" : "left";
+          }
+
+          function animEmoji(a) {
+            if (a.type === "golden") return "👑";
+            if (a.name.toLowerCase().includes("bonnie")) return "🐰";
+            if (a.name.toLowerCase().includes("chica")) return "🐔";
+            if (a.name.toLowerCase().includes("freddy")) return "🐻";
+            if (a.name.toLowerCase().includes("foxy")) return "🦊";
+            return "👾";
+          }
+
+          const goldenPossessors = ["Evan", "Cassidy"];
+          function goldenLoreName() {
+            return `Golden Freddy (${goldenPossessors.join(" & ")})`;
+          }
+
+          const staticOverlay = document.getElementById("static-overlay");
+          function showStatic(ms = 1200) {
+            if (!staticOverlay) return;
+            staticOverlay.classList.add("active");
+            setTimeout(() => staticOverlay.classList.remove("active"), ms);
+          }
+
+          function renderStatus() {
+            const displayHour = hour === 0 ? 12 : hour;
+            if (nightEl) nightEl.textContent = night;
+            timeEl.textContent = `${displayHour} AM`;
+            powerEl.textContent = Math.max(0, Math.floor(power)) + "%";
+            if (cameraLabel) {
+              cameraLabel.textContent =
+                currentCam !== null ? `Cam ${currentCam + 1}` : "None";
+            }
+            updateCameraViews();
+            saveGameState();
+            savePrefs();
+          }
+
+          function getSavedState() {
+            try {
+              return JSON.parse(localStorage.getItem("fnaf-save"));
+            } catch (e) {
+              return null;
+            }
+          }
+
+          function hasSavedGame() {
+            return !!getSavedState();
+          }
+
+          function saveGameState() {
+            if (!running) return;
+            const save = {
+              night,
+              hour,
+              power,
+              currentCam,
+              lightOn,
+              leftDoorClosed,
+              rightDoorClosed,
+              seconds,
+              anims: anims.map((a) => ({
+                name: a.name,
+                pos: a.pos,
+                moveChance: a.moveChance,
+                patience: a.patience,
+                unseenTicks: a.unseenTicks,
+                type: a.type,
+              })),
+            };
+            localStorage.setItem("fnaf-save", JSON.stringify(save));
+          }
+
+          function loadGameState() {
+            const save = getSavedState();
+            if (!save) return false;
+            night = save.night;
+            hour = save.hour;
+            power = save.power;
+            currentCam = save.currentCam;
+            lightOn = save.lightOn;
+            leftDoorClosed = !!save.leftDoorClosed;
+            rightDoorClosed = !!save.rightDoorClosed;
+            seconds = save.seconds || 0;
+            anims.forEach((a) => {
+              const saved = save.anims.find((item) => item.name === a.name);
+              if (saved) {
+                a.pos = saved.pos;
+                a.moveChance = saved.moveChance;
+                if (a.type === "freddy") a.patience = saved.patience || 0;
+                if (a.type === "foxy") a.unseenTicks = saved.unseenTicks || 0;
+              }
+            });
+            document.querySelector(".room").classList.toggle("light-on", lightOn);
+            document
+              .querySelector(".room")
+              .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
+            lightStateEl.textContent = lightOn ? "On" : "Off";
+            if (leftDoorStateEl)
+              leftDoorStateEl.textContent = leftDoorClosed ? "Closed" : "Open";
+            if (rightDoorStateEl)
+              rightDoorStateEl.textContent = rightDoorClosed ? "Closed" : "Open";
+            return true;
+          }
+
+          function getPrefs() {
+            try {
+              return JSON.parse(localStorage.getItem("fnaf-prefs")) || {};
+            } catch (e) {
+              return {};
+            }
+          }
+
+          function savePrefs() {
+            try {
+              const p = {
+                phoneMuted,
+                customUnlocked,
+                customNight: selectedCustomNight,
+              };
+              localStorage.setItem("fnaf-prefs", JSON.stringify(p));
+            } catch (e) {}
+          }
+
+          const phoneGuyLines = [
+            "Hello? Hello? Hey, uh, you're doing great for your first night.",
+            "Um, don't worry too much — just keep an eye on the cameras and conserve power",
+            "The doors will stop animatronics when closed, and the lights will help you see in the office.",
+            "Uh, good luck. It's going to be a long night.",
+          ];
+
+          function showPhoneBubble(text, timeout = 4000) {
+            if (!phoneBubble) return;
+            phoneBubble.textContent = text;
+            phoneBubble.classList.remove("hidden");
+            clearTimeout(phoneBubble._t);
+            phoneBubble._t = setTimeout(
+              () => phoneBubble.classList.add("hidden"),
+              timeout,
+            );
+          }
+
+          function speakLine(text) {
+            if (phoneMuted) return Promise.resolve();
+            return new Promise((resolve) => {
+              showPhoneBubble(text);
+              if (window.speechSynthesis) {
+                const ut = new SpeechSynthesisUtterance(text);
+                ut.rate = 1;
+                ut.pitch = 0.9;
+                ut.onend = () => resolve();
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(ut);
+              } else {
+                setTimeout(resolve, 1600 + Math.min(3000, text.length * 40));
+              }
+            });
+          }
+
+          async function playPhoneGuyIntro() {
+            for (const line of phoneGuyLines) {
+              await speakLine(line);
+              await new Promise((r) => setTimeout(r, 300));
+            }
+            phoneBubble.classList.add("hidden");
+          }
+
+          function setMenuNight() {
+            if (menuNightEl) menuNightEl.textContent = night;
+          }
+
+          function updateMenuButtons() {
+            if (continueBtn) continueBtn.disabled = !hasSavedGame();
+            if (customNightBtn) customNightBtn.disabled = !customUnlocked;
+            if (customNightSelect) customNightSelect.disabled = !customUnlocked;
+            if (customUnlockNote)
+              customUnlockNote.textContent = customUnlocked
+                ? "Custom Night unlocked! Choose a night and start playing."
+                : "Beat Night 5 to unlock Custom Night mode.";
+          }
+
+          function unlockCustomNight() {
+            if (customUnlocked) return;
+            customUnlocked = true;
+            savePrefs();
+            updateMenuButtons();
+          }
+
+          function startNight(startNightNumber = 1, isCustom = false) {
+            customMode = isCustom;
+            night = startNightNumber;
+            hour = 0;
+            seconds = 0;
+            power = 100;
+            currentCam = 0;
+            lightOn = false;
+            leftDoorClosed = false;
+            rightDoorClosed = false;
+            anims.forEach((a) => {
+              a.pos = 0;
+              if (a.type === "freddy") a.patience = 0;
+              if (a.type === "foxy") a.unseenTicks = 0;
+            });
+            setNightDifficulty();
+            document.body.style.filter = "";
+            document.querySelector(".room").classList.remove("light-on", "door-closed");
+            if (lightStateEl) lightStateEl.textContent = "Off";
+            if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
+            if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
+            cameraView.querySelectorAll(".camera").forEach((c, i) => {
+              c.classList.toggle("hidden", i !== 0);
+            });
+            camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
+            if (mainMenu) mainMenu.classList.add("hidden");
+            running = true;
+            showActiveCamera();
+            renderStatus();
+            startAmbient();
+            if (!isCustom) {
+              setTimeout(() => playPhoneGuyIntro().catch(() => {}), 300);
+            } else {
+              showMessage(`Custom Night ${night} started!`);
+            }
+          }
+
+          function showActiveCamera() {
+            cameraView
+              .querySelectorAll(".camera")
+              .forEach((c) => c.classList.add("hidden"));
+            const active = cameraView.querySelector(
+              `.camera[data-cam="${currentCam}"]`,
+            );
+            if (active) active.classList.remove("hidden");
+            camBtns.forEach((b) =>
+              b.classList.toggle("active", Number(b.dataset.cam) === currentCam),
+            );
+          }
+
+          function openMainMenu() {
+            if (mainMenu) mainMenu.classList.remove("hidden");
+            running = false;
+            setMenuNight();
+            updateMenuButtons();
+            renderStatus();
+          }
+
+          function closeMenu() {
+            if (mainMenu) mainMenu.classList.add("hidden");
+            running = true;
+            showActiveCamera();
+            renderStatus();
+            startAmbient();
+          }
+
+          function updateCameraViews() {
+            rooms.forEach((_, i) => {
+              const view = document.querySelector(
+                `.camera[data-cam="${i}"] .camera-visitors`
+              );
+              if (!view) return;
+              const visitors = anims.filter((a) => a.pos === i).map((a) => a.name);
+              view.textContent = visitors.length
+                ? `Visitors: ${visitors.join(", ")}`
+                : "Visitors: None";
+            });
+
+            const leftDoorVisitors = anims
+              .filter((a) => a.pos === 2 && animSide(a) === "left")
+              .map((a) => a.name);
+            const rightDoorVisitors = anims
+              .filter((a) => a.pos === 2 && animSide(a) === "right")
+              .map((a) => a.name);
+            if (leftDoorStateEl)
+              leftDoorStateEl.textContent = leftDoorVisitors.length
+                ? `Close: ${leftDoorVisitors.join(", ")}`
+                : leftDoorClosed
+                  ? "Closed"
+                  : "Open";
+            if (rightDoorStateEl)
+              rightDoorStateEl.textContent = rightDoorVisitors.length
+                ? `Close: ${rightDoorVisitors.join(", ")}`
+                : rightDoorClosed
+                  ? "Closed"
+                  : "Open";
+            const leftDoorLight = document.getElementById("left-door-light");
+            const rightDoorLight = document.getElementById("right-door-light");
+            if (leftDoorLight)
+              leftDoorLight.classList.toggle(
+                "active",
+                leftDoorVisitors.length > 0 || leftDoorClosed,
+              );
+            if (rightDoorLight)
+              rightDoorLight.classList.toggle(
+                "active",
+                rightDoorVisitors.length > 0 || rightDoorClosed,
+              );
+
+            const officeVisitors = anims.filter((a) => a.pos >= 3).map((a) => a.name);
+            office.textContent = officeVisitors.length
+              ? `Office — Close: ${officeVisitors.join(", ")}`
+              : "Office";
+
+            rooms.forEach((_, i) => {
+              const overlay = document.querySelector(
+                `.camera[data-cam="${i}"] .camera-overlay`
+              );
+              if (!overlay) return;
+              overlay.innerHTML = "";
+              const icons = anims
+                .filter((a) => a.pos === i)
+                .map((a) => {
+                  const s = document.createElement("span");
+                  s.className = "anim-icon";
+                  s.textContent = animEmoji(a);
+                  return s;
+                });
+              icons.forEach((n) => overlay.appendChild(n));
+            });
+          }
+
+          function setNightDifficulty() {
+            anims.forEach((a) => {
+              if (a.name === "Bonnie") a.moveChance = 0.18 + (night - 1) * 0.06;
+              if (a.name === "Chica") a.moveChance = 0.12 + (night - 1) * 0.06;
+              if (a.name === "Freddy") a.moveChance = 0.14 + (night - 1) * 0.05;
+              if (a.name === "Foxy") a.moveChance = 0.13 + (night - 1) * 0.05;
+              if (a.type === "golden") a.moveChance = 0.04 + (night - 1) * 0.05;
+            });
+          }
+
+          function advanceNight() {
+            showMessage(`Night ${night} complete! Starting Night ${night + 1}...`);
+            night += 1;
+            hour = 0;
+            seconds = 0;
+            power = 100;
+            currentCam = 0;
+            lightOn = false;
+            leftDoorClosed = false;
+            rightDoorClosed = false;
+            anims.forEach((a) => {
+              a.pos = 0;
+              if (a.type === "freddy") a.patience = 0;
+              if (a.type === "foxy") a.unseenTicks = 0;
+            });
+            setNightDifficulty();
+            document.querySelector(".room").classList.remove("light-on", "door-closed");
+            lightStateEl.textContent = "Off";
+            if (leftDoorStateEl) leftDoorStateEl.textContent = "Open";
+            if (rightDoorStateEl) rightDoorStateEl.textContent = "Open";
+            cameraView.querySelectorAll(".camera").forEach((c, i) => {
+              c.classList.toggle("hidden", i !== 0);
+            });
+            camBtns.forEach((b, i) => b.classList.toggle("active", i === 0));
+            renderStatus();
+            updateCameraViews();
+          }
+
+          function showMessage(text) {
+            message.textContent = text;
+            message.classList.remove("hidden");
+            setTimeout(() => message.classList.add("hidden"), 2500);
+          }
+
+          camBtns.forEach((btn) =>
+            btn.addEventListener("click", () => {
+              if (!running) return;
+              currentCam = Number(btn.dataset.cam);
+              showActiveCamera();
+              power -= 0.2; 
+              renderStatus();
+              playClick();
+            }),
+          );
+
+          newGameBtn?.addEventListener("click", () => {
+            startNight(1, false);
+          });
+
+          continueBtn?.addEventListener("click", () => {
+            if (loadGameState()) {
+              customMode = false;
+              closeMenu();
+            } else {
+              showMessage("No saved night found.");
+            }
+          });
+
+          customNightBtn?.addEventListener("click", () => {
+            const target = Number(customNightSelect?.value || 1);
+            selectedCustomNight = target;
+            startNight(target, true);
+          });
+
+          customNightSelect?.addEventListener("change", () => {
+            selectedCustomNight = Number(customNightSelect.value);
+            savePrefs();
+          });
+
+          menuBtn?.addEventListener("click", () => {
+            hideJumpscare();
+            openMainMenu();
+          });
+
+          phoneCallBtn?.addEventListener("click", () => {
+            playPhoneGuyIntro().catch(() => {});
+          });
+
+          phoneMuteBtn?.addEventListener("click", () => {
+            phoneMuted = !phoneMuted;
+            phoneMuteBtn.classList.toggle("muted", phoneMuted);
+            phoneMuteBtn.textContent = phoneMuted
+              ? "Unmute Phone Guy"
+              : "Mute Phone Guy";
+            if (phoneMuted && window.speechSynthesis) window.speechSynthesis.cancel();
+            savePrefs();
+          });
+
+          let lightOn = false;
+          let leftDoorClosed = false;
+          let rightDoorClosed = false;
+
+          toggleLight.addEventListener("click", () => {
+            if (!running) return;
+            lightOn = !lightOn;
+            document.querySelector(".room").classList.toggle("light-on", lightOn);
+            lightStateEl.textContent = lightOn ? "On" : "Off";
+            renderStatus();
+            playClick();
+          });
+
+          toggleLeftDoor?.addEventListener("click", () => {
+            if (!running) return;
+            leftDoorClosed = !leftDoorClosed;
+            document
+              .querySelector(".room")
+              .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
+            if (leftDoorStateEl)
+              leftDoorStateEl.textContent = leftDoorClosed ? "Closed" : "Open";
+            renderStatus();
+            playClick();
+          });
+
+          toggleRightDoor?.addEventListener("click", () => {
+            if (!running) return;
+            rightDoorClosed = !rightDoorClosed;
+            document
+              .querySelector(".room")
+              .classList.toggle("door-closed", leftDoorClosed || rightDoorClosed);
+            if (rightDoorStateEl)
+              rightDoorStateEl.textContent = rightDoorClosed ? "Closed" : "Open";
+            renderStatus();
+            playClick();
+          });
+
+          function checkLose() {
+            for (const a of anims) {
+              if (a.pos >= 3) {
+                const side = animSide(a);
+                const blocked = side === "left" ? leftDoorClosed : rightDoorClosed;
+                if (!blocked && !lightOn) {
+                  lose(a.name);
+                  return true;
+                }
+                if (!blocked && lightOn) {
+                  if (a.type === "golden" && night === 5) {
+                    lose(goldenLoreName());
+                  } else {
+                    lose(a.name);
+                  }
+                  return true;
+                }
+              }
+            }
+            return false;
+          }
+
+          function lose(name) {
+            running = false;
+            stopAmbient();
+            showMessage("GAME OVER: Caught by " + name);
+            document.body.style.filter = "brightness(0.4)";
+            triggerJumpscare(name);
+          }
+
+          function win() {
+            running = false;
+            stopAmbient();
+            if (customMode) {
+              showMessage(`You survived Custom Night ${night}!`);
+              document.body.style.filter = "brightness(1.2)";
+              document.getElementById("end-controls").classList.remove("hidden");
+              return;
+            }
+
+            if (night === 5) {
+              unlockCustomNight();
+              showMessage("You survived Night 5! Custom Night unlocked.");
+              document.body.style.filter = "brightness(1.2)";
+              document.getElementById("end-controls").classList.remove("hidden");
+              return;
+            }
+
+            showMessage("You survived the night! You win!");
+            document.body.style.filter = "brightness(1.2)";
+            document.getElementById("end-controls").classList.remove("hidden");
+          }
+
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          const audioCtx = new AudioCtx();
+          let ambientOsc;
+          let ambientAudio = null;
+          let clickAudio = null;
+          let jumpscareAudio = null;
+          const jumpscareImg = document.getElementById("jumpscare-img");
+          const jumpscareText = document.getElementById("jumpscare-text");
+          const restartBtn = document.getElementById("restart-btn");
+
+          function playTone(freq = 440, time = 0.12, type = "sine", volume = 0.08) {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = type;
+            o.frequency.value = freq;
+            g.gain.value = volume;
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.start();
+            o.stop(audioCtx.currentTime + time);
+          }
+
+          function startAmbient() {
+            if (ambientAudio) {
+              ambientAudio.loop = true;
+              ambientAudio.volume = 0.25;
+              ambientAudio.play().catch(() => {});
+              return;
+            }
+            try {
+              ambientOsc = audioCtx.createOscillator();
+              const g = audioCtx.createGain();
+              ambientOsc.type = "sine";
+              ambientOsc.frequency.value = 60;
+              g.gain.value = 0.008;
+              ambientOsc.connect(g);
+              g.connect(audioCtx.destination);
+              ambientOsc.start();
+            } catch (e) {}
+          }
+
+          function stopAmbient() {
+            if (ambientOsc) { try { ambientOsc.stop(); } catch(e){} }
+            if (ambientAudio) {
+              try {
+                ambientAudio.pause();
+                ambientAudio.currentTime = 0;
+              } catch (e) {}
+            }
+          }
+
+          function triggerJumpscare(kind) {
+            stopAmbient();
+            if (jumpscareAudio) {
+              jumpscareAudio.volume = 0.18;
+              jumpscareAudio.play().catch(() => {});
+            } else {
+              playTone(60, 0.4, "sawtooth", 0.1);
+              playTone(420, 0.8, "sawtooth", 0.04);
+              playTone(1400, 0.18, "square", 0.03);
+            }
+            const j = document.getElementById("jumpscare");
+            if (kind && kind.toLowerCase().includes("golden")) showStatic(900);
+            j.classList.toggle("jumpscare-golden", !!(kind && kind.toLowerCase().includes("golden")));
+            
+            jumpscareText.textContent = kind ? `${kind.toUpperCase()} ATTACKED!` : "JUMPSCARED!";
+            j.classList.remove("hidden");
+            j.setAttribute("aria-hidden", "false");
+            document.getElementById("end-controls").classList.remove("hidden");
+          }
+
+          function hideJumpscare() {
+            const j = document.getElementById("jumpscare");
+            j.classList.add("hidden");
+            j.setAttribute("aria-hidden", "true");
+            document.getElementById("end-controls").classList.add("hidden");
+          }
+
+          restartBtn?.addEventListener("click", () => {
+            hideJumpscare();
+            startNight(night, customMode);
+          });
+
+          async function tryLoadAsset(url) {
+            try {
+              const res = await fetch(url, { cache: "no-cache" });
+              if (!res.ok) return null;
+              const blob = await res.blob();
+              return URL.createObjectURL(blob);
+            } catch (e) { return null; }
+          }
+
+          (async function loadAssets() {
+            const base = "assets/";
+            const amb = await tryLoadAsset(base + "ambient.mp3");
+            if (amb) ambientAudio = new Audio(amb);
+            const clk = await tryLoadAsset(base + "click.mp3");
+            if (clk) { clickAudio = new Audio(clk); clickAudio.volume = 0.6; }
+            const js = await tryLoadAsset(base + "jumpscare.mp3");
+            if (js) { jumpscareAudio = new Audio(js); jumpscareAudio.volume = 0.45; }
+            const img = await tryLoadAsset(base + "jumpscare.png");
+            if (img && jumpscareImg) jumpscareImg.src = img;
+          })();
+
+          function playClick() {
+            if (clickAudio) {
+              clickAudio.currentTime = 0;
+              clickAudio.play().catch(() => {});
+            } else playTone(1200, 0.06, "square", 0.04);
+          }
+
+          function gameTick() {
+            if (!running) return;
+            seconds += 1;
+            const secondsPerHour = 10; 
+            if (seconds % secondsPerHour === 0) {
+              hour = Math.min(6, hour + 1);
+              anims.forEach((a) => (a.moveChance = Math.min(0.6, a.moveChance + 0.03)));
+            }
+
+            let drain = 0.05;
+            if (lightOn) drain += 0.35;
+            if (leftDoorClosed || rightDoorClosed) drain += 0.15;
+            if (currentCam !== null) drain += 0.12;
+            power -= drain;
+            if (power <= 0) {
+              power = 0;
+              lose("Power Loss");
+            }
+
+            for (const a of anims) {
+              if (a.type === "freddy") {
+                if (currentCam === 2 && a.pos >= 2) {
+                  if (Math.random() < 0.55) {
+                    a.pos = Math.max(0, a.pos - 1);
+                    a.patience = 0;
+                  }
+                  continue;
+                }
+                if (currentCam !== 2) {
+                  a.patience = Math.min(5, a.patience + 1);
+                }
+                const freddyChance = a.moveChance + hour * 0.03 + a.patience * 0.04;
+                if (Math.random() < freddyChance) {
+                  a.pos = Math.min(3, a.pos + 1);
+                  a.patience = 0;
+                }
+                if (((animSide(a) === "left" && leftDoorClosed) || (animSide(a) === "right" && rightDoorClosed)) && a.pos >= 3) {
+                  a.pos = 2;
+                }
+                continue;
+              }
+
+              if (a.type === "foxy") {
+                if (currentCam === 1 && a.pos >= 1) {
+                  if (Math.random() < 0.4) a.pos = Math.max(0, a.pos - 1);
+                  a.unseenTicks = 0;
+                } else {
+                  a.unseenTicks = Math.min(6, a.unseenTicks + 1);
+                }
+                const foxyChance = a.moveChance + hour * 0.04 + a.unseenTicks * 0.05;
+                if (Math.random() < foxyChance) a.pos = Math.min(3, a.pos + 1);
+                if (((animSide(a) === "left" && leftDoorClosed) || (animSide(a) === "right" && rightDoorClosed)) && a.pos >= 3) {
+                  a.pos = 2;
+                }
+                continue;
+              }
+
+              if (currentCam !== null && a.pos === currentCam) {
+                if (Math.random() < 0.45) {
+                  a.pos = Math.max(0, a.pos - 1);
+                  continue;
+                }
+              }
+
+              let effectiveChance = a.moveChance + hour * 0.03;
+              if (a.type === "standard") {
+                if (currentCam === a.pos) effectiveChance -= 0.12;
+                else effectiveChance += 0.08;
+              }
+              if (a.type === "golden") {
+                effectiveChance += (night - 1) * 0.02;
+              }
+
+              if (Math.random() < Math.max(0, effectiveChance)) {
+                a.pos = Math.min(3, a.pos + 1);
+              }
+              if (Math.random() < 0.02) a.pos = Math.max(0, a.pos - 1);
+
+              if (a.type === "golden" && a.pos >= 3) {
+                if (night === 5) {
+                  showMessage(`${goldenLoreName()} has fully possessed the suit on Night 5!`);
+                  lose(goldenLoreName());
+                  return;
+                }
+                if (Math.random() < 0.6) {
+                  lose(a.name);
+                  return;
+                } else {
+                  showMessage("Golden Freddy vanished...");
+                  a.pos = 0;
+                  continue;
+                }
+              }
+            }
+
+            if (hour >= 6) {
+              if (night < 5) { advanceNight(); return; }
+              win(); return;
+            }
+
+            renderStatus();
+            checkLose();
+          }
+
+          cameraView.querySelectorAll(".camera").forEach((c, i) => {
+            if (i !== 0) c.classList.add("hidden");
+          });
+
+          (function initPrefs() {
+            const p = getPrefs();
+            phoneMuted = !!p.phoneMuted;
+            customUnlocked = !!p.customUnlocked;
+            selectedCustomNight = p.customNight || 1;
+            if (phoneMuteBtn) {
+              phoneMuteBtn.classList.toggle("muted", phoneMuted);
+              phoneMuteBtn.textContent = phoneMuted ? "Unmute Phone Guy" : "Mute Phone Guy";
+            }
+            if (customNightSelect) customNightSelect.value = String(selectedCustomNight);
+            updateMenuButtons();
+          })();
+
+          openMainMenu();
+
+          window.addEventListener("keydown", (e) => {
+            if (!running) return;
+            if (e.key === "l" || e.key === "L") toggleLight.click();
+            if (e.key === "d" || e.key === "D") {
+              if (toggleLeftDoor) toggleLeftDoor.click();
+              if (toggleRightDoor) toggleRightDoor.click();
+            }
+            if (["1", "2", "3"].includes(e.key)) {
+              const idx = Number(e.key) - 1;
+              const btn = Array.from(camBtns)[idx];
+              if (btn) btn.click();
+            }
+          });
+
+          setInterval(gameTick, 1000);
+          renderStatus();
+          window.__FNAF = { anims };
+        })();
+    </script>
 </body>
-
 </html>
