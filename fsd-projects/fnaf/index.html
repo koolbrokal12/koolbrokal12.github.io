@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Parody Security Simulator - Complete Build</title>
+    <title>Parody Security Simulator - Balanced Build</title>
     <style>
         body {
             background-color: #050505;
@@ -465,6 +465,10 @@
           let leftDoorClosed = false;
           let rightDoorClosed = false;
 
+          // NERF VARIABLES FOR GOLDEN GLITCH
+          let cam8StareTicks = 0; 
+          let officeInvasionTicks = 0;
+
           Object.values(aiSelectors).forEach(select => {
               for(let i=0; i<=20; i++) {
                   const opt = document.createElement("option");
@@ -576,6 +580,8 @@
 
             customMode = isCustom; night = startNightNumber; hour = 0; seconds = 0; power = 100; currentCam = 0;
             lightOn = false; leftDoorClosed = false; rightDoorClosed = false;
+            cam8StareTicks = 0;
+            officeInvasionTicks = 0;
             
             anims.forEach(a => {
               a.pathIdx = 0;
@@ -638,17 +644,15 @@
             if (active) active.classList.remove("hidden");
             camBtns.forEach(b => b.classList.toggle("active", Number(b.dataset.cam) === currentCam));
 
-            if (currentCam === 7) {
-                const glitch = anims.find(a => a.type === "glitch");
-                if (glitch && glitch.pos === 7 && glitch.level > 0 && (customMode || night >= 3)) {
-                     triggerGlitchJumpscare();
-                }
+            // NERFED: No more instant death upon clicking Cam 8. Stare ticks accumulate in gameTick instead.
+            if (currentCam !== 7) {
+                cam8StareTicks = 0; 
             }
           }
 
           function triggerGlitchJumpscare() {
              running = false;
-             document.getElementById("jumpscare-text").innerHTML = `👑 GOLDEN GLITCH OVERLOAD 👑<br><span style='font-size:12px;color:#ffcc00;'>EXPOSED TO VAULT CORRUPTION FEEDS</span>`;
+             document.getElementById("jumpscare-text").innerHTML = `👑 GOLDEN GLITCH OVERLOAD 👑<br><span style='font-size:12px;color:#ffcc00;'>CRASHED BY VAULT ENTITIES (CASSIDY/EVAN)</span>`;
              document.getElementById("jumpscare").classList.remove("hidden");
              document.getElementById("end-controls").classList.remove("hidden");
           }
@@ -684,7 +688,11 @@
             if (rightDoorStateEl) rightDoorStateEl.textContent = rHallEntities.length ? `Prox: ${rHallEntities.join(",")}` : rightDoorClosed ? "Closed" : "Open";
 
             const breach = anims.filter(a => a.pos === 8).map(a => a.name);
-            office.textContent = breach.length ? `BREACH DETECTED: ${breach.join(", ")}` : "Office Sealed & Secure";
+            if (breach.includes("Golden Glitch")) {
+                office.textContent = "⚠️ [WARNING: SPIRIT APPARITION DETECTED IN OFFICE] ⚠️";
+            } else {
+                office.textContent = breach.length ? `BREACH DETECTED: ${breach.join(", ")}` : "Office Sealed & Secure";
+            }
           }
 
           function showPhoneBubble(text) {
@@ -751,7 +759,22 @@
           });
 
           function checkLose() {
+            const glitch = anims.find(a => a.type === "glitch");
+            
+            // NERFED OFFICE DEATH LOGIC
+            if (glitch && glitch.pos === 8) {
+                // If they are in your office and you haven't brought up another camera, ticks accumulate
+                if (currentCam === null || lightOn) {
+                    officeInvasionTicks++;
+                }
+                if (officeInvasionTicks >= 2) { // 2 seconds to react or you fail
+                     triggerGlitchJumpscare();
+                     return true;
+                }
+            }
+
             for (const a of anims) {
+              if (a.type === "glitch") continue; // Handled separately above
               if (a.pos === 8 && (lightOn || currentCam !== null)) {
                   running = false;
                   document.getElementById("jumpscare-text").innerHTML = `⚡ ${a.name.toUpperCase()} OVERRIDE ⚡<br><span style='font-size:12px;color:#555;'>SYSTEM LOSS AT ${hour === 0 ? 12 : hour} AM</span>`;
@@ -775,15 +798,40 @@
             
             if (power <= 0) { running = false; alert("Total Grid Blackout!"); openMainMenu(); return; }
 
+            const glitch = anims.find(a => a.type === "glitch");
+            
+            // NERFED CAMERA FEED STARE TIMER SYSTEM
+            if (glitch && glitch.pos === 7 && currentCam === 7 && glitch.level > 0) {
+                cam8StareTicks++;
+                if (cam8StareTicks >= 3) { // Staring for ~2.5-3 seconds summons them to office
+                    glitch.pos = 8;
+                    cam8StareTicks = 0;
+                    officeInvasionTicks = 0;
+                    currentCam = null; // Forces monitors down so they sit in front of you
+                    showActiveCamera();
+                    showMessage("A glitch manifestation materialized on your desk!");
+                }
+            }
+
             for (const a of anims) {
               if (a.level === 0) { continue; } 
 
               if (a.type === "glitch") {
                   if (a.pos === 7) {
-                      if (currentCam === 7) { triggerGlitchJumpscare(); return; }
-                      if (Math.random() < (a.moveChance + 0.05)) {
+                      // Rare random chance to teleport directly to office even if not viewing Cam 8
+                      if (Math.random() < (a.moveChance * 0.4)) {
                           a.pos = 8;
+                          officeInvasionTicks = 0;
+                          currentCam = null;
+                          showActiveCamera();
                           showMessage("An eerie code anomaly entered the office area...");
+                      }
+                  } else if (a.pos === 8) {
+                      // If player successfully switches camera feed to escape them, they leave!
+                      if (currentCam !== null && currentCam !== 7 && !lightOn) {
+                          a.pos = 7;
+                          officeInvasionTicks = 0;
+                          showMessage("The digital phantom dissolved away.");
                       }
                   }
                   continue;
