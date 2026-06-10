@@ -35,17 +35,6 @@
       z-index: 10; 
     }
 
-    .trail-particle {
-      width: 70px;
-      height: 70px;
-      background-color: rgba(0, 255, 100, 0.6); 
-      position: absolute;
-      border-radius: 8px;
-      pointer-events: none; 
-      z-index: 1; 
-      transition: opacity 0.3s ease, transform 0.3s ease; 
-    }
-
     .board {
       height: 100vh;
       transition: background-color 0.3s ease;
@@ -140,9 +129,16 @@
         box.text(newText);
       }
 
+      // Variable declarations below here
+      // TODO 2: Set Up positionX to Move the Box
       var positionX = 0;   
       var positionY = 100; 
+      
+      // TODO 4: Set Up and Update the Score
       var points = 0;      
+      
+      // TODO 5: Speeding Up
+      var speed = 10;
       var speedX = 10;     
       var speedY = 10;     
       var mistakes = 0;    
@@ -165,37 +161,17 @@
           clearInterval(interval);
       }
 
-      function createTrail(x, y) {
-          var particle = jQuery("<div>").addClass("trail-particle");
-          
-          particle.css({
-              left: x + "px",
-              top: y + "px"
-          });
-          
-          board.append(particle);
-          
-          setTimeout(function() {
-              particle.css({
-                  "opacity": "0",
-                  "transform": "scale(0.5)" 
-              });
-          }, 50);
-          
-          setTimeout(function() {
-              particle.remove();
-          }, 350);
-      }
-
       function update() {
-          createTrail(positionX, positionY);
-
+          // TODO 2 & TODO 5: Update positionX in the update Function
           positionX = positionX + speedX;
           positionY = positionY + speedY;
 
-          if (positionX > (boardWidth - 70)) {
+          // TODO 6: Make the Box Bounce off the Right Side
+          if (positionX > boardWidth) {
               speedX *= -1; 
           }
+          
+          // TODO 7: Make the Box Bounce off the Left Side
           if (positionX < 0) {
               speedX *= -1; 
           }
@@ -207,6 +183,7 @@
               speedY *= -1; 
           }
 
+          // TODO 2: Update Your moveBoxTo Function Call
           moveBoxTo(positionX, positionY);
       }
 
@@ -223,34 +200,37 @@
               event.stopPropagation();
           }
 
+          // TODO 4: Increment the points Variable on Each Click
           points++;
+          
+          // TODO 3 & TODO 4: Display Text on the Box using points
           changeBoxText(points);
 
-          positionX = Math.random() * (boardWidth - 70);
+          // TODO 3: Reset positionX to 0 in handleBoxClick
+          positionX = 0;
           positionY = Math.random() * (boardHeight - 70);
 
           box.css("background-color", getRandomColor());
 
-          var currentModifier = 3 * points + 10;
+          // TODO 8: Fix the Speed Bug with a Linear Formula
+          speed = 3 * points + 10;
           
           if (points % 3 === 0) {
-              currentModifier += 15; 
+              speed += 15; 
               board.css('background-color', getRandomColor());
           }
 
-          speedX = speedX < 0 ? -currentModifier : currentModifier;
-          speedY = speedY < 0 ? -currentModifier : currentModifier;
+          speedX = speedX < 0 ? -speed : speed;
+          speedY = speedY < 0 ? -speed : speed;
 
-          updateSpeedUI(currentModifier);
+          updateSpeedUI(speed);
       }
 
       window.handleBoardClick = function() {
           mistakes++;
           
-          // Updated string template to show max 69
           missCounterElement.text("Misses: " + mistakes + " / 69");
           
-          // Updated conditional limit check to 69
           if (mistakes >= 69) {
               endGame(); 
               

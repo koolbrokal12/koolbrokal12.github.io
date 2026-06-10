@@ -156,7 +156,7 @@
             update() {
                 if (!this.player || gameState !== 'playing') return;
                 
-                const speed = 5;
+                const speed = 10;
                 if (this.keys['w'] || this.keys['arrowup']) this.player.y -= speed;
                 if (this.keys['s'] || this.keys['arrowdown']) this.player.y += speed;
                 if (this.keys['a'] || this.keys['arrowleft']) this.player.x -= speed;
@@ -174,7 +174,7 @@
                     
                     if (distance < this.player.radius + target.radius) {
                         if (this.player.radius > target.radius) {
-                            this.player.radius += 1.5; 
+                            this.player.radius += 100; 
                             
                             let randomColorIndex = Math.floor(Math.random() * playerColors.length);
                             this.player.color = playerColors[randomColorIndex];
@@ -203,7 +203,7 @@
         }
 
         // TODO 3 & TODO 7: Draw 69 Circles
-        for (var i = 0; i < 69; i++) {
+        for (var i = 0; i < 101; i++) {
             drawCircle();
         }
 
