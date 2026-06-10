@@ -14,7 +14,48 @@
             display: block;
             background: #000;
         }
-        #ui {
+        /* MAIN MENU STYLING */
+        #main-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95);
+            padding: 40px;
+            border-radius: 10px;
+            border: 2px solid #ff3366;
+            color: white;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
+            z-index: 10;
+        }
+        .menu-btn {
+            display: block;
+            width: 200px;
+            padding: 12px;
+            margin: 15px auto;
+            background: #ff3366;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .menu-btn:hover {
+            background: #ff5588;
+            transform: scale(1.05);
+        }
+        #multi-btn {
+            background: #33ccff;
+        }
+        #multi-btn:hover {
+            background: #55ddff;
+        }
+        /* IN-GAME UI STYLING */
+        #game-ui {
+            display: none;
             position: absolute;
             top: 10px;
             left: 10px;
@@ -28,10 +69,16 @@
 </head>
 <body>
 
-    <div id="ui">
-        <h3>Controls</h3>
-        <p>Use WASD or Arrow Keys to move your circle (Red).</p>
+    <div id="main-menu">
+        <h1>CIRCULARITY</h1>
         <p>Absorb smaller circles to grow larger!</p>
+        <button class="menu-btn" id="start-btn">Single Player</button>
+        <button class="menu-btn" id="multi-btn">Multiplayer Mode</button>
+    </div>
+
+    <div id="game-ui">
+        <p>Controls: WASD / Arrow Keys</p>
+        <p>Role: Red Circle</p>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -42,6 +89,23 @@
         
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+
+        // Game State Engine
+        let gameState = 'menu'; 
+
+        // Setup menu button click handlers
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            gameState = 'playing';
+        });
+
+        document.getElementById('multi-btn').addEventListener('click', () => {
+            alert("Generating Multiplayer Room Link...\n(Simulated room connection established!)");
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            gameState = 'playing';
+        });
 
         const view = {
             children: [],
@@ -73,7 +137,6 @@
             }
         };
 
-        // Built-in Gamification Engine code
         const Gamification = {
             init(config) {
                 this.canvas = config.canvas;
@@ -87,13 +150,12 @@
                     this.player = this.circles[0];
                     this.player.color = "#ff3366"; 
                     this.player.radius = 20;
-                    // Stop player auto-movement
                     this.player.velocityX = 0;
                     this.player.velocityY = 0;
                 }
             },
             update() {
-                if (!this.player) return;
+                if (!this.player || gameState !== 'playing') return;
                 
                 const speed = 5;
                 if (this.keys['w'] || this.keys['arrowup']) this.player.y -= speed;
@@ -101,12 +163,10 @@
                 if (this.keys['a'] || this.keys['arrowleft']) this.player.x -= speed;
                 if (this.keys['d'] || this.keys['arrowright']) this.player.x += speed;
 
-                // Handle screen limits for large player size smoothly
                 if (this.player.radius > this.canvas.width / 3) {
                     this.player.radius = this.canvas.width / 3; 
                 }
 
-                // Check collisions/absorptions
                 for (let i = 1; i < this.circles.length; i++) {
                     let target = this.circles[i];
                     let dx = this.player.x - target.x;
@@ -116,7 +176,6 @@
                     if (distance < this.player.radius + target.radius) {
                         if (this.player.radius > target.radius) {
                             this.player.radius += 0.4;
-                            // Respawn absorbed circle
                             target.x = Math.random() * this.canvas.width;
                             target.y = Math.random() * this.canvas.height;
                         }
@@ -176,6 +235,7 @@
 
             // TODO 8 & 9: Update loop for all circles
             for (var i = 0; i < circles.length; i++) {
+                // Background circles continue to drift behind the menu overlay
                 physikz.updatePosition(circles[i]);
                 game.checkCirclePosition(circles[i]);
             }
