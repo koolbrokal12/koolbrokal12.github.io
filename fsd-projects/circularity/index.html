@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Circularity - Gamified</title>
+    <title>Circularity</title>
     <style>
         body {
             margin: 0;
@@ -14,7 +14,6 @@
             display: block;
             background: #000;
         }
-        /* MAIN MENU STYLING */
         #main-menu {
             position: absolute;
             top: 50%;
@@ -53,7 +52,6 @@
         #multi-btn:hover {
             background: #55ddff;
         }
-        /* IN-GAME UI STYLING */
         #game-ui {
             display: none;
             position: absolute;
@@ -71,14 +69,14 @@
 
     <div id="main-menu">
         <h1>CIRCULARITY</h1>
-        <p>Absorb smaller circles to grow larger!</p>
+        <p>Absorb smaller circles to grow and change colors!</p>
         <button class="menu-btn" id="start-btn">Single Player</button>
         <button class="menu-btn" id="multi-btn">Multiplayer Mode</button>
     </div>
 
     <div id="game-ui">
         <p>Controls: WASD / Arrow Keys</p>
-        <p>Role: Red Circle</p>
+        <p>Score: <span id="score-txt">0</span> circles eaten</p>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -90,10 +88,11 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Game State Engine
         let gameState = 'menu'; 
+        let score = 0;
 
-        // Setup menu button click handlers
+        const playerColors = ['#ff3366', '#ff6633', '#ffcc33', '#33ccff', '#33ff66', '#9933ff', '#ff33cc', '#00ffcc'];
+
         document.getElementById('start-btn').addEventListener('click', () => {
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
@@ -101,7 +100,7 @@
         });
 
         document.getElementById('multi-btn').addEventListener('click', () => {
-            alert("Generating Multiplayer Room Link...\n(Simulated room connection established!)");
+            alert("Connecting to multiplayer lobby...");
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             gameState = 'playing';
@@ -148,7 +147,7 @@
                 
                 if (this.circles.length > 0) {
                     this.player = this.circles[0];
-                    this.player.color = "#ff3366"; 
+                    this.player.color = playerColors[0]; 
                     this.player.radius = 20;
                     this.player.velocityX = 0;
                     this.player.velocityY = 0;
@@ -175,7 +174,14 @@
                     
                     if (distance < this.player.radius + target.radius) {
                         if (this.player.radius > target.radius) {
-                            this.player.radius += 0.4;
+                            this.player.radius += 1.5; 
+                            
+                            let randomColorIndex = Math.floor(Math.random() * playerColors.length);
+                            this.player.color = playerColors[randomColorIndex];
+                            
+                            score++;
+                            document.getElementById('score-txt').innerText = score;
+
                             target.x = Math.random() * this.canvas.width;
                             target.y = Math.random() * this.canvas.height;
                         }
@@ -184,11 +190,11 @@
             }
         };
 
-        // TODO 1: Variables
-        var circle;
-        var circles = [];
+        // TODO 1: Declare our variables
+        var circle; 
+        var circles = []; 
 
-        // TODO 2: Function to make a circle
+        // TODO 2: Create a Function to Draw a Circle
         function drawCircle() {
             circle = draw.randomCircleInArea(canvas, true, true, "#999", 2);
             physikz.addRandomVelocity(circle, canvas, 5, 5);
@@ -196,24 +202,16 @@
             circles.push(circle);
         }
 
-        // TODO 3 & 7: Loop to populate 50 circles
-        for (var i = 0; i < 50; i++) {
+        // TODO 3 & TODO 7: Draw 69 Circles
+        for (var i = 0; i < 69; i++) {
             drawCircle();
         }
 
-        // Initialize gamification features
-        Gamification.init({
-            canvas: canvas,
-            view: view,
-            draw: draw,
-            physikz: physikz,
-            circles: circles,
-            game: this
-        });
-
         const game = {
             checkCirclePosition: function(circle) {
-                // TODO 6: Screen wrapping logic
+                if (circle === Gamification.player) return;
+
+                // TODO 6: Loop from All Sides
                 if (circle.x - circle.radius > canvas.width) {
                     circle.x = -circle.radius;
                 }
@@ -229,14 +227,25 @@
             }
         };
 
+        // Initialize gamification features (Moved below the 'game' object definition to fix initialization order)
+        Gamification.init({
+            canvas: canvas,
+            view: view,
+            draw: draw,
+            physikz: physikz,
+            circles: circles,
+            game: game
+        });
+
         // Main animation driver
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // TODO 8 & 9: Update loop for all circles
+            // TODO 8 / TODO 9: Iterate over the Array to update positions and check boundaries
             for (var i = 0; i < circles.length; i++) {
-                // Background circles continue to drift behind the menu overlay
-                physikz.updatePosition(circles[i]);
+                if (circles[i] !== Gamification.player) {
+                    physikz.updatePosition(circles[i]);
+                }
                 game.checkCirclePosition(circles[i]);
             }
 
