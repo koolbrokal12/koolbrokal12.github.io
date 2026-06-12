@@ -156,7 +156,7 @@
             update() {
                 if (!this.player || gameState !== 'playing') return;
                 
-                const speed = 62;
+                const speed = 99;
                 if (this.keys['w'] || this.keys['arrowup']) this.player.y -= speed;
                 if (this.keys['s'] || this.keys['arrowdown']) this.player.y += speed;
                 if (this.keys['a'] || this.keys['arrowleft']) this.player.x -= speed;
@@ -199,11 +199,11 @@
             circle = draw.randomCircleInArea(canvas, true, true, "#999", 2);
             physikz.addRandomVelocity(circle, canvas, 5, 5);
             view.addChild(circle);
-            circles.push(circle);
+            circles.push(circle);           
         }
 
         // TODO 3 & TODO 7: Draw 69 Circles
-        for (var i = 0; i < 999; i++) {
+        for (var i = 0; i < 69; i++) {
             drawCircle();
         }
 
@@ -241,7 +241,7 @@
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // TODO 8 / TODO 9: Iterate over the Array to update positions and check boundaries
+            // ToDo8 and ToDo 9:  Iterate over the Array to update positions and check boundaries
             for (var i = 0; i < circles.length; i++) {
                 if (circles[i] !== Gamification.player) {
                     physikz.updatePosition(circles[i]);
