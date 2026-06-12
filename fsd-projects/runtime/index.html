@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <title>Runtime Neo</title>
@@ -13,383 +13,387 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            color: white;
-            font-family: sans-serif;
+            color: #fff;
+            font-family: system-ui, -apple-system, sans-serif;
             overflow: hidden;
         }
-        #main {
+        #game-container {
             position: relative;
         }
         canvas {
             background-color: #000;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
             display: block;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div id="main">
+    <div id="game-container">
         <canvas id="canvas" width="800" height="400"></canvas>
     </div>
 
     <script>
-        // Inline fallback engine initialization if external libraries fail to mount
-        var canvas, stage, app, gameObjects = [], projectiles = [], currentLevelIndex = 0, currentLevel;
-        var player = { winConditionMet: false, health: 100, score: 0, x: 100, y: 250 };
+        // --- GAME CONFIGURATION & STATE ---
+        let canvas, ctx;
+        let activeEntities = [];
+        let activeProjectiles = [];
+        let currentLevelIndex = 0;
+        let activeLevel = null;
         
-        var scenery = {
-            building: {
-                loopWidth: 1200,
-                instances: [
-                    { x: 0, width: 100, height: 300, speedX: -2 },
-                    { x: 300, width: 150, height: 400, speedX: -1.5 },
-                    { x: 650, width: 120, height: 250, speedX: -2.2 },
-                    { x: 900, width: 180, height: 450, speedX: -1.2 }
+        const player = { 
+            x: 100, 
+            y: 340, // Ground level baseline
+            width: 40,
+            height: 40,
+            velocityY: 0,
+            isJumping: false,
+            health: 200, 
+            score: 0, 
+            hasWon: false 
+        };
+        
+        const controls = {};
+
+        const sceneryData = {
+            buildings: {
+                loopBounds: 1200,
+                elements: [
+                    { x: 0, width: 100, height: 300, parallaxSpeed: -2 },
+                    { x: 300, width: 150, height: 400, parallaxSpeed: -1.5 },
+                    { x: 650, width: 120, height: 250, parallaxSpeed: -2.2 },
+                    { x: 900, width: 180, height: 450, parallaxSpeed: -1.2 }
                 ]
             },
-            lamp: {
-                loopWidth: 800,
-                instances: [
-                    { x: 150, width: 20, height: 100, speedX: -3 },
-                    { x: 450, width: 20, height: 100, speedX: -3 },
-                    { x: 750, width: 20, height: 100, speedX: -3 },
-                    { x: 1050, width: 20, height: 100, speedX: -3 }
+            lamps: {
+                loopBounds: 800,
+                elements: [
+                    { x: 150, width: 20, height: 100, parallaxSpeed: -3 },
+                    { x: 450, width: 20, height: 100, parallaxSpeed: -3 },
+                    { x: 750, width: 20, height: 100, parallaxSpeed: -3 },
+                    { x: 1050, width: 20, height: 100, parallaxSpeed: -3 }
                 ]
             }
         };
 
-        var levels = [
+        const levelData = [
             {
                 name: "Level 1: Ground Zero",
-                speed: 3,
-                gameObjects: [
-                    { type: "platform", kind: "basicPlatform", x: 200, y: 250, width: 150, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 500, y: 180, width: 150, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 800, y: 230, width: 150, height: 20 },
-                    { type: "obstacle", kind: "spikes", x: 400, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", kind: "spikes", x: 700, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", kind: "spikes", x: 1100, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "enemy", kind: "bug", x: 450, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 1 },
-                    { type: "enemy", kind: "bug", x: 750, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
-                    { type: "enemy", kind: "bug", x: 1000, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 2 },
-                    { type: "powerup", kind: "healthUp", x: 550, y: 120, width: 30, height: 30, collect: true, contactHealthChange: 10 },
-                    { type: "powerup", kind: "healthUp", x: 850, y: 150, width: 30, height: 30, collect: true, contactHealthChange: 10 },
-                    { type: "goal", kind: "flag", x: 1400, y: 280, width: 50, height: 80 }
+                scrollSpeed: 3,
+                mapObjects: [
+                    { type: "platform", x: 200, y: 250, width: 150, height: 20 },
+                    { type: "platform", x: 500, y: 180, width: 150, height: 20 },
+                    { type: "platform", x: 800, y: 230, width: 150, height: 20 },
+                    { type: "obstacle", x: 400, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", x: 700, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", x: 1100, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "enemy", x: 450, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 1 },
+                    { type: "enemy", x: 750, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
+                    { type: "enemy", x: 1000, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 2 },
+                    { type: "powerup", x: 550, y: 120, width: 30, height: 30 },
+                    { type: "powerup", x: 850, y: 150, width: 30, height: 30 },
+                    { type: "goal", x: 1400, y: 280, width: 50, height: 80 }
                 ]
             },
             {
                 name: "Level 2: High Voltage",
-                speed: 5,
-                gameObjects: [
-                    { type: "platform", kind: "basicPlatform", x: 200, y: 220, width: 120, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 450, y: 150, width: 120, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 700, y: 250, width: 120, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 950, y: 160, width: 120, height: 20 },
-                    { type: "obstacle", kind: "spikes", x: 350, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", kind: "spikes", x: 600, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", kind: "spikes", x: 800, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", kind: "spikes", x: 1100, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", kind: "spikes", x: 1300, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "enemy", kind: "bug", x: 300, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
-                    { type: "enemy", kind: "bug", x: 550, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
-                    { type: "enemy", kind: "bug", x: 850, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 2 },
-                    { type: "enemy", kind: "bug", x: 1050, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 1 },
-                    { type: "enemy", kind: "bug", x: 1250, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 3 },
-                    { type: "powerup", kind: "healthUp", x: 250, y: 150, width: 30, height: 30, collect: true },
-                    { type: "powerup", kind: "healthUp", x: 500, y: 90, width: 30, height: 30, collect: true },
-                    { type: "powerup", kind: "healthUp", x: 1000, y: 100, width: 30, height: 30, collect: true },
-                    { type: "goal", kind: "flag", x: 1600, y: 220, width: 50, height: 80 }
+                scrollSpeed: 5,
+                mapObjects: [
+                    { type: "platform", x: 200, y: 220, width: 120, height: 20 },
+                    { type: "platform", x: 450, y: 150, width: 120, height: 20 },
+                    { type: "platform", x: 700, y: 250, width: 120, height: 20 },
+                    { type: "platform", x: 950, y: 160, width: 120, height: 20 },
+                    { type: "obstacle", x: 350, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", x: 600, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", x: 800, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", x: 1100, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", x: 1300, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "enemy", x: 300, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
+                    { type: "enemy", x: 550, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
+                    { type: "enemy", x: 850, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 2 },
+                    { type: "enemy", x: 1050, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 1 },
+                    { type: "enemy", x: 1250, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 3 },
+                    { type: "powerup", x: 250, y: 150, width: 30, height: 30 },
+                    { type: "powerup", x: 500, y: 90, width: 30, height: 30 },
+                    { type: "powerup", x: 1000, y: 100, width: 30, height: 30 },
+                    { type: "goal", x: 1600, y: 220, width: 50, height: 80 }
                 ]
             },
             {
                 name: "Level 3: The Final Challenge",
-                speed: 6,
-                gameObjects: [
-                    { type: "platform", kind: "basicPlatform", x: 150, y: 250, width: 100, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 350, y: 180, width: 100, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 600, y: 120, width: 100, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 850, y: 200, width: 100, height: 20 },
-                    { type: "platform", kind: "basicPlatform", x: 1100, y: 150, width: 100, height: 20 },
-                    { type: "obstacle", kind: "spikes", x: 300, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", kind: "spikes", x: 500, y: 340, width: 40, height: 40, hp: 2 },
-                    { type: "obstacle", kind: "spikes", x: 550, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", kind: "spikes", x: 750, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", kind: "spikes", x: 950, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", kind: "spikes", x: 1200, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", kind: "spikes", x: 1400, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "enemy", kind: "bug", x: 200, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
-                    { type: "enemy", kind: "bug", x: 400, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 2 },
-                    { type: "enemy", kind: "bug", x: 650, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 3 },
-                    { type: "enemy", kind: "bug", x: 900, y: 320, width: 40, height: 40, speedX: -5, speedY: 0, hp: 1 },
-                    { type: "enemy", kind: "bug", x: 1150, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 2 },
-                    { type: "enemy", kind: "bug", x: 1350, y: 320, width: 40, height: 40, speedX: -6, speedY: 0, hp: 1 },
-                    { type: "powerup", kind: "healthUp", x: 200, y: 190, width: 30, height: 30, collect: true },
-                    { type: "powerup", kind: "healthUp", x: 400, y: 120, width: 30, height: 30, collect: true },
-                    { type: "powerup", kind: "healthUp", x: 650, y: 60, width: 30, height: 30, collect: true },
-                    { type: "powerup", kind: "healthUp", x: 900, y: 140, width: 30, height: 30, collect: true },
-                    { type: "goal", kind: "flag", x: 1750, y: 220, width: 50, height: 80 }
+                scrollSpeed: 6,
+                mapObjects: [
+                    { type: "platform", x: 150, y: 250, width: 100, height: 20 },
+                    { type: "platform", x: 350, y: 180, width: 100, height: 20 },
+                    { type: "platform", x: 600, y: 120, width: 100, height: 20 },
+                    { type: "platform", x: 850, y: 200, width: 100, height: 20 },
+                    { type: "platform", x: 1100, y: 150, width: 100, height: 20 },
+                    { type: "obstacle", x: 300, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", x: 500, y: 340, width: 40, height: 40, hp: 2 },
+                    { type: "obstacle", x: 550, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", x: 750, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", x: 950, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", x: 1200, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", x: 1400, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "enemy", x: 200, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
+                    { type: "enemy", x: 400, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 2 },
+                    { type: "enemy", x: 650, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 3 },
+                    { type: "enemy", x: 900, y: 320, width: 40, height: 40, speedX: -5, speedY: 0, hp: 1 },
+                    { type: "enemy", x: 1150, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 2 },
+                    { type: "enemy", x: 1350, y: 320, width: 40, height: 40, speedX: -6, speedY: 0, hp: 1 },
+                    { type: "powerup", x: 200, y: 190, width: 30, height: 30 },
+                    { type: "powerup", x: 400, y: 120, width: 30, height: 30 },
+                    { type: "powerup", x: 650, y: 60, width: 30, height: 30 },
+                    { type: "powerup", x: 900, y: 140, width: 30, height: 30 },
+                    { type: "goal", x: 1750, y: 220, width: 50, height: 80 }
                 ]
             }
         ];
 
-        // Object factory instantiators
-        function makePlatform(obj) { gameObjects.push(obj); }
-        function makeObstacle(obj) { gameObjects.push(obj); }
-        function makeEnemy(obj) { gameObjects.push(obj); }
-        function makePowerup(obj) { gameObjects.push(obj); }
-        function makeGoal(obj) { gameObjects.push(obj); }
-
-        function isCollidingWithProjectile(proj, obj) {
-            return proj.x < obj.x + obj.width && proj.x + 10 > obj.x &&
-                   proj.y < obj.y + obj.height && proj.y + 5 > obj.y;
-        }
-
-        function isGenericCollision(obj) {
-            return player.x < obj.x + obj.width && player.x + 40 > obj.x &&
-                   player.y < obj.y + obj.height && player.y + 40 > obj.y;
-        }
-
-        function handleProjectileObjectCollision(objIdx, projIdx) {
-            var obj = gameObjects[objIdx];
-            if (obj.hp !== Infinity) {
-                obj.hp -= 1;
-                if (obj.hp <= 0) {
-                    gameObjects.splice(objIdx, 1);
-                    player.score += 100;
-                }
-            }
-            projectiles.splice(projIdx, 1);
-        }
-
-        function handleHallebotGenericCollision(idx) {
-            var obj = gameObjects[idx];
-            if (obj.type === "obstacle" || obj.type === "enemy") {
-                player.health -= 20;
-                gameObjects.splice(idx, 1);
-            } else if (obj.type === "powerup") {
-                player.health = Math.min(100, player.health + 20);
-                gameObjects.splice(idx, 1);
-            } else if (obj.type === "goal") {
-                triggerLevelTransition();
-            }
-        }
-    </script>
-
-    <script>
-        function moveScenery() {
-            for (var i = 0; i < scenery.building.instances.length; i++) {
-                var buildingInstance = scenery.building.instances[i];
-                buildingInstance.x = buildingInstance.x + buildingInstance.speedX + currentLevel.speed;
-                if (buildingInstance.x + buildingInstance.width < 0) {
-                    buildingInstance.x = scenery.building.loopWidth;
-                }
-            }
-            for (var j = 0; j < scenery.lamp.instances.length; j++) {
-                var lampInstance = scenery.lamp.instances[j];
-                lampInstance.x = lampInstance.x + lampInstance.speedX + currentLevel.speed;
-                if (lampInstance.x + lampInstance.width < 0) {
-                    lampInstance.x = scenery.lamp.loopWidth;
-                }
-            }
-        }
-
-        function generateLevel() {
-            for (var i = 0; i < currentLevel.gameObjects.length; i++) {
-                var currentObject = currentLevel.gameObjects[i];
-                create(currentObject);
-            }
-        }
-
-        function create(obj) {
-            // Clone configuration setup to prevent mutating base blueprints
-            var clone = Object.assign({}, obj);
-            if (clone.type === "obstacle") { makeObstacle(clone); } 
-            else if (clone.type === "enemy") { makeEnemy(clone); } 
-            else if (clone.type === "powerup") { makePowerup(clone); } 
-            else if (clone.type === "goal") { makeGoal(clone); } 
-            else if (clone.type === "platform") { makePlatform(clone); }
-        }
-
-        function filterObjects(type) {
-            var matched = [];
-            for (var i = 0; i < gameObjects.length; i++) {
-                if (gameObjects[i].type === type) { matched.push(gameObjects[i]); }
-            }
-            return matched;
-        }
-
-        function moveGameObjects(objectsArray) {
-            for (var i = 0; i < objectsArray.length; i++) {
-                var currentObject = objectsArray[i];
-                currentObject.x = currentObject.x + (currentObject.speedX || 0) - currentLevel.speed;
-                currentObject.y = currentObject.y + (currentObject.speedY || 0);
-            }
-        }
-
-        function handleProjectileCollisions() {
-            for (var i = 0; i < gameObjects.length; i++) {
-                var currentObject = gameObjects[i];
-                for (var j = 0; j < projectiles.length; j++) {
-                    var currentProjectile = projectiles[j];
-                    if (isCollidingWithProjectile(currentProjectile, currentObject) === true) {
-                        handleProjectileObjectCollision(i, j);
-                        return;
-                    }
-                }
-            }
-        }
-
-        function handleHallebotGenericCollisions() {
-            for (var i = 0; i < gameObjects.length; i++) {
-                var currentObject = gameObjects[i];
-                if (currentObject.type !== "platform") {
-                    if (isGenericCollision(currentObject) === true) {
-                        handleHallebotGenericCollision(i);
-                        return;
-                    }
-                }
-            }
-        }
-
-        function triggerLevelTransition() {
-            currentLevelIndex = currentLevelIndex + 1;
-            gameObjects = [];
-            projectiles = [];
-            if (currentLevelIndex >= levels.length) {
-                player.winConditionMet = true;
-            } else {
-                currentLevel = levels[currentLevelIndex];
-                generateLevel();
-            }
-        }
-    </script>
-
-    <script>
-        var ctx;
-        var keys = {};
-
+        // --- ENGINE SYSTEMS ---
+        
         function init() {
             canvas = document.getElementById("canvas");
             ctx = canvas.getContext("2d");
-            currentLevel = levels[currentLevelIndex];
+            activeLevel = levelData[currentLevelIndex];
             
-            generateLevel();
+            buildLevelEntities();
 
-            window.addEventListener("keydown", function(e) { keys[e.code] = true; if(e.code === "Space") fireProjectile(); });
-            window.addEventListener("keyup", function(e) { keys[e.code] = false; });
+            window.addEventListener("keydown", e => { 
+                controls[e.code] = true; 
+                if (e.code === "Space") spawnProjectile(); 
+            });
+            window.addEventListener("keyup", e => { controls[e.code] = false; });
 
-            window.requestAnimationFrame(update);
+            window.requestAnimationFrame(gameLoop);
         }
 
-        function fireProjectile() {
-            projectiles.push({ x: player.x + 40, y: player.y + 15, speedX: 8, speedY: 0 });
+        function buildLevelEntities() {
+            activeEntities = activeLevel.mapObjects.map(item => ({...item}));
         }
 
-        var velocityY = 0;
-        var isJumping = false;
+        function spawnProjectile() {
+            activeProjectiles.push({ x: player.x + 40, y: player.y + 15, speedX: 8 });
+        }
 
-        function update() {
+        function triggerNextLevel() {
+            currentLevelIndex++;
+            activeEntities = [];
+            activeProjectiles = [];
+            
+            if (currentLevelIndex >= levelData.length) {
+                player.hasWon = true;
+            } else {
+                activeLevel = levelData[currentLevelIndex];
+                buildLevelEntities();
+            }
+        }
+
+        // --- COLLISION PHYSICS CORE ---
+
+        function checkCollision(box1, box2) {
+            return box1.x < box2.x + box2.width &&
+                   box1.x + (box1.width || 10) > box2.x &&
+                   box1.y < box2.y + box2.height &&
+                   box1.y + (box1.height || 5) > box2.y;
+        }
+
+        function evaluateCollisions() {
+            // Player vs Interactive Entities Loop
+            for (let i = activeEntities.length - 1; i >= 0; i--) {
+                let entity = activeEntities[i];
+                if (entity.type === "platform") continue;
+
+                if (checkCollision(player, entity)) {
+                    if (entity.type === "obstacle" || entity.type === "enemy") {
+                        player.health -= 20;
+                        activeEntities.splice(i, 1);
+                    } else if (entity.type === "powerup") {
+                        player.health = Math.min(100, player.health + 20);
+                        activeEntities.splice(i, 1);
+                    } else if (entity.type === "goal") {
+                        triggerNextLevel();
+                        return;
+                    }
+                }
+            }
+
+            // Projectiles vs Destroyable Entities Loop
+            for (let p = activeProjectiles.length - 1; p >= 0; p--) {
+                let bullet = activeProjectiles[p];
+                
+                for (let e = activeEntities.length - 1; e >= 0; e--) {
+                    let entity = activeEntities[e];
+                    
+                    if (checkCollision(bullet, entity)) {
+                        if (entity.hp !== Infinity) {
+                            entity.hp--;
+                            if (entity.hp <= 0) {
+                                activeEntities.splice(e, 1);
+                                player.score += 100;
+                            }
+                        }
+                        activeProjectiles.splice(p, 1);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // --- MAIN SIMULATION LOOP ---
+
+        function updatePhysics() {
+            // Background environment panning
+            sceneryData.buildings.elements.forEach(b => {
+                b.x += b.parallaxSpeed - activeLevel.scrollSpeed;
+                if (b.x + b.width < 0) b.x = sceneryData.buildings.loopBounds;
+            });
+
+            sceneryData.lamps.elements.forEach(l => {
+                l.x += l.parallaxSpeed - activeLevel.scrollSpeed;
+                if (l.x + l.width < 0) l.x = sceneryData.lamps.loopBounds;
+            });
+
+            // Level elements tracking translation
+            activeEntities.forEach(ent => {
+                ent.x += (ent.speedX || 0) - activeLevel.scrollSpeed;
+                ent.y += (ent.speedY || 0);
+            });
+
+            // Player Horizontal Controls
+            if (controls["ArrowLeft"]) player.x = Math.max(0, player.x - 4);
+            if (controls["ArrowRight"]) player.x = Math.min(canvas.width - player.width, player.x + 4);
+            
+            // Jump processing
+            if (controls["ArrowUp"] && !player.isJumping) {
+                player.velocityY = -12;
+                player.isJumping = true;
+            }
+
+            // Environmental Gravity application
+            player.velocityY += 0.5;
+            player.y += player.velocityY;
+
+            // Solid Floor collision baseline
+            if (player.y >= 340) {
+                player.y = 340;
+                player.velocityY = 0;
+                player.isJumping = false;
+            }
+
+            // Platform Collision snap geometry calculations
+            activeEntities.filter(e => e.type === "platform").forEach(platform => {
+                if (player.x + player.width > platform.x && 
+                    player.x < platform.x + platform.width &&
+                    player.y + player.height >= platform.y && 
+                    player.y + 30 < platform.y && 
+                    player.velocityY > 0) {
+                    
+                    player.y = platform.y - player.height;
+                    player.velocityY = 0;
+                    player.isJumping = false;
+                }
+            });
+
+            // Projectiles vector tracking routine
+            for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+                activeProjectiles[i].x += activeProjectiles[i].speedX;
+                if (activeProjectiles[i].x > canvas.width) activeProjectiles.splice(i, 1);
+            }
+
+            evaluateCollisions();
+        }
+
+        // --- GRAPHICS RENDERING SYSTEM ---
+
+        function drawGraphics() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (player.winConditionMet) {
+            // Screen Termination Overlays
+            if (player.hasWon) {
                 ctx.fillStyle = "#00ff00";
-                ctx.font = "30px sans-serif";
-                ctx.fillText("YOU WIN! GAME COMPLETED", 200, 200);
+                ctx.font = "bold 30px sans-serif";
+                ctx.fillText("You won congrats", 180, 200);
                 return;
             }
             if (player.health <= 0) {
                 ctx.fillStyle = "#ff0000";
-                ctx.font = "30px sans-serif";
-                ctx.fillText("GAME OVER", 320, 200);
+                ctx.font = "bold 30px sans-serif";
+                ctx.fillText("you died you failed the mission", 320, 200);
                 return;
             }
 
-            // Run student logic routines
-            moveScenery();
-            moveGameObjects(gameObjects);
-            
-            // Render Scenery Backgrounds
+            // Draw Parallax Backdrop
             ctx.fillStyle = "#223";
-            for (var i = 0; i < scenery.building.instances.length; i++) {
-                var b = scenery.building.instances[i];
+            sceneryData.buildings.elements.forEach(b => {
                 ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
-            }
+            });
             ctx.fillStyle = "#ff0";
-            for (var j = 0; j < scenery.lamp.instances.length; j++) {
-                var l = scenery.lamp.instances[j];
+            sceneryData.lamps.elements.forEach(l => {
                 ctx.fillRect(l.x, canvas.height - l.height, l.width, l.height);
-            }
+            });
 
-            // Handle Character controls
-            if (keys["ArrowLeft"]) player.x = Math.max(0, player.x - 4);
-            if (keys["ArrowRight"]) player.x = Math.min(canvas.width - 40, player.x + 4);
-            if (keys["ArrowUp"] && !isJumping) {
-                velocityY = -12;
-                isJumping = true;
-            }
-
-            // Apply gravity forces
-            velocityY += 0.5;
-            player.y += velocityY;
-
-            // Simple floor tracking bounds
-            if (player.y >= 340) {
-                player.y = 340;
-                velocityY = 0;
-                isJumping = false;
-            }
-
-            // Check platform interactions
-            var platforms = filterObjects("platform");
-            for (var p = 0; p < platforms.length; p++) {
-                var plat = platforms[p];
-                if (player.x + 40 > plat.x && player.x < plat.x + plat.width &&
-                    player.y + 40 >= plat.y && player.y + 30 < plat.y && velocityY > 0) {
-                    player.y = plat.y - 40;
-                    velocityY = 0;
-                    isJumping = false;
-                }
-            }
-
-            // Render HalleBot Entity
-            ctx.fillStyle = "#00d2ff";
-            ctx.fillRect(player.x, player.y, 40, 40);
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(player.x + 25, player.y + 10, 10, 10);
-
-            // Manage Projectile loops
-            for (var k = projectiles.length - 1; k >= 0; k--) {
-                projectiles[k].x += projectiles[k].speedX;
-                ctx.fillStyle = "#ff00ff";
-                ctx.fillRect(projectiles[k].x, projectiles[k].y, 10, 5);
-                if (projectiles[k].x > canvas.width) projectiles.splice(k, 1);
-            }
-
-            // Render Layout GameObjects Array targets
-            for (var m = 0; m < gameObjects.length; m++) {
-                var g = gameObjects[m];
-                if (g.type === "platform") ctx.fillStyle = "#555";
-                else if (g.type === "obstacle") ctx.fillStyle = "#ff0000";
-                else if (g.type === "enemy") ctx.fillStyle = "#orange";
-                else if (g.type === "powerup") ctx.fillStyle = "#00ff00";
-                else if (g.type === "goal") ctx.fillStyle = "#ffff00";
+            // Draw Level Object Blueprints
+            activeEntities.forEach(ent => {
+                if (ent.type === "platform") ctx.fillStyle = "#555";
+                else if (ent.type === "obstacle") ctx.fillStyle = "#ff0000";
+                else if (ent.type === "enemy") ctx.fillStyle = "orange";
+                else if (ent.type === "powerup") ctx.fillStyle = "#00ff00";
+                else if (ent.type === "goal") ctx.fillStyle = "#ffff00";
                 
-                ctx.fillRect(g.x, g.y, g.width, g.height);
+                ctx.fillRect(ent.x, ent.y, ent.width, ent.height);
+            });
+
+            // Draw Active Projectile Instances
+            ctx.fillStyle = "#ff00ff";
+            activeProjectiles.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, 10, 5);
+            });
+
+            // --- REFACTORED HALLEBOT RENDERING ---
+            // Main Mechanical Chassis
+            ctx.fillStyle = "#00d2ff"; 
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Interface Visor housing
+            ctx.fillStyle = "#111"; 
+            ctx.fillRect(player.x + 5, player.y + 5, 30, 15);
+
+            // Reactive Visor LED Eye Array
+            ctx.fillStyle = player.health < 40 ? "#ff0055" : "#00ffcc"; 
+            ctx.fillRect(player.x + 10, player.y + 8, 20, 8);
+
+            // Dynamic Propulsion Thruster Logic
+            if (player.isJumping) {
+                ctx.fillStyle = Math.random() > 0.5 ? "#ff3300" : "#ff9900"; 
+                ctx.fillRect(player.x - 10, player.y + 20, 10, 12);
+            } else {
+                ctx.fillStyle = "#888";
+                ctx.fillRect(player.x - 6, player.y + 10, 6, 20);
             }
 
-            // Collision checks loops
-            handleProjectileCollisions();
-            handleHallebotGenericCollisions();
+            // Tread base locomotion
+            ctx.fillStyle = "#333";
+            ctx.fillRect(player.x + 2, player.y + 38, 36, 5); 
+            ctx.fillStyle = "#555";
+            ctx.fillRect(player.x + 6, player.y + 39, 6, 3);  
+            ctx.fillRect(player.x + 28, player.y + 39, 6, 3); 
 
-            // Display UI Interface elements
+            // HUD Layer Engine
             ctx.fillStyle = "#fff";
-            ctx.font = "16px sans-serif";
-            ctx.fillText(currentLevel.name, 20, 30);
+            ctx.font = "600 16px sans-serif";
+            ctx.fillText(activeLevel.name, 20, 30);
             ctx.fillText("Score: " + player.score, 680, 30);
             ctx.fillText("HP: " + player.health, 680, 55);
+        }
 
-            window.requestAnimationFrame(update);
+        function gameLoop() {
+            if (!player.hasWon && player.health > 0) {
+                updatePhysics();
+            }
+            drawGraphics();
+            window.requestAnimationFrame(gameLoop);
         }
 
         window.onload = init;

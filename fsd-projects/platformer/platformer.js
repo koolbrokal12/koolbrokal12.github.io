@@ -44,7 +44,7 @@ $(function () {
     createCannon("top", 700, 2000, 24, 24, 100, 1200, 2); // moving cannon with medium projectiles
     createCannon("left", 450, 2500, 10, 10, 150, 600, 1); // smaller projectiles
     createCannon("right", 300, 3000, 20, 20, 200, 500, 2); // additional cannon to meet project requirements
-    createCannon("left", 670, 0, 0, 0, 670, 670, 0, 0);
+    createCannon("left", 670, 0, 0, 0, 670, 670, 0, 0); // additional cannon that doesnt shoot projectiles but can still kill you
   }
 
   registerSetup(setup);
