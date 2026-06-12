@@ -151,8 +151,7 @@
             }
         ];
 
-        // --- ENGINE SYSTEMS ---
-        
+
         function init() {
             canvas = document.getElementById("canvas");
             ctx = canvas.getContext("2d");
@@ -190,7 +189,7 @@
             }
         }
 
-        // --- COLLISION PHYSICS CORE ---
+
 
         function checkCollision(box1, box2) {
             return box1.x < box2.x + box2.width &&
@@ -219,7 +218,6 @@
                 }
             }
 
-            // Projectiles vs Destroyable Entities Loop
             for (let p = activeProjectiles.length - 1; p >= 0; p--) {
                 let bullet = activeProjectiles[p];
                 
@@ -241,7 +239,7 @@
             }
         }
 
-        // --- MAIN SIMULATION LOOP ---
+
 
         function updatePhysics() {
             // Background environment panning
@@ -255,34 +253,32 @@
                 if (l.x + l.width < 0) l.x = sceneryData.lamps.loopBounds;
             });
 
-            // Level elements tracking translation
             activeEntities.forEach(ent => {
                 ent.x += (ent.speedX || 0) - activeLevel.scrollSpeed;
                 ent.y += (ent.speedY || 0);
             });
 
-            // Player Horizontal Controls
+            
             if (controls["ArrowLeft"]) player.x = Math.max(0, player.x - 4);
             if (controls["ArrowRight"]) player.x = Math.min(canvas.width - player.width, player.x + 4);
             
-            // Jump processing
+           
             if (controls["ArrowUp"] && !player.isJumping) {
                 player.velocityY = -12;
                 player.isJumping = true;
             }
 
-            // Environmental Gravity application
+           
             player.velocityY += 0.5;
             player.y += player.velocityY;
 
-            // Solid Floor collision baseline
+            
             if (player.y >= 340) {
                 player.y = 340;
                 player.velocityY = 0;
                 player.isJumping = false;
             }
 
-            // Platform Collision snap geometry calculations
             activeEntities.filter(e => e.type === "platform").forEach(platform => {
                 if (player.x + player.width > platform.x && 
                     player.x < platform.x + platform.width &&
@@ -296,7 +292,6 @@
                 }
             });
 
-            // Projectiles vector tracking routine
             for (let i = activeProjectiles.length - 1; i >= 0; i--) {
                 activeProjectiles[i].x += activeProjectiles[i].speedX;
                 if (activeProjectiles[i].x > canvas.width) activeProjectiles.splice(i, 1);
@@ -305,12 +300,11 @@
             evaluateCollisions();
         }
 
-        // --- GRAPHICS RENDERING SYSTEM ---
 
         function drawGraphics() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Screen Termination Overlays
+            
             if (player.hasWon) {
                 ctx.fillStyle = "#00ff00";
                 ctx.font = "bold 30px sans-serif";
@@ -324,7 +318,7 @@
                 return;
             }
 
-            // Draw Parallax Backdrop
+
             ctx.fillStyle = "#223";
             sceneryData.buildings.elements.forEach(b => {
                 ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
@@ -334,7 +328,7 @@
                 ctx.fillRect(l.x, canvas.height - l.height, l.width, l.height);
             });
 
-            // Draw Level Object Blueprints
+          
             activeEntities.forEach(ent => {
                 if (ent.type === "platform") ctx.fillStyle = "#555";
                 else if (ent.type === "obstacle") ctx.fillStyle = "#ff0000";
@@ -345,26 +339,23 @@
                 ctx.fillRect(ent.x, ent.y, ent.width, ent.height);
             });
 
-            // Draw Active Projectile Instances
+       
             ctx.fillStyle = "#ff00ff";
             activeProjectiles.forEach(bullet => {
                 ctx.fillRect(bullet.x, bullet.y, 10, 5);
             });
 
-            // --- REFACTORED HALLEBOT RENDERING ---
-            // Main Mechanical Chassis
+        
             ctx.fillStyle = "#00d2ff"; 
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // Interface Visor housing
             ctx.fillStyle = "#111"; 
             ctx.fillRect(player.x + 5, player.y + 5, 30, 15);
 
-            // Reactive Visor LED Eye Array
+
             ctx.fillStyle = player.health < 40 ? "#ff0055" : "#00ffcc"; 
             ctx.fillRect(player.x + 10, player.y + 8, 20, 8);
 
-            // Dynamic Propulsion Thruster Logic
             if (player.isJumping) {
                 ctx.fillStyle = Math.random() > 0.5 ? "#ff3300" : "#ff9900"; 
                 ctx.fillRect(player.x - 10, player.y + 20, 10, 12);
@@ -373,14 +364,13 @@
                 ctx.fillRect(player.x - 6, player.y + 10, 6, 20);
             }
 
-            // Tread base locomotion
+
             ctx.fillStyle = "#333";
             ctx.fillRect(player.x + 2, player.y + 38, 36, 5); 
             ctx.fillStyle = "#555";
             ctx.fillRect(player.x + 6, player.y + 39, 6, 3);  
             ctx.fillRect(player.x + 28, player.y + 39, 6, 3); 
 
-            // HUD Layer Engine
             ctx.fillStyle = "#fff";
             ctx.font = "600 16px sans-serif";
             ctx.fillText(activeLevel.name, 20, 30);
