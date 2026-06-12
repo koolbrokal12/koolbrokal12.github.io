@@ -1,37 +1,398 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Runtime Neo Game</title>
+    <meta charset="utf-8">
+    <title>Runtime Neo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             margin: 0;
-            background: #111;
+            padding: 0;
+            background-color: #111;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            color: white;
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+        #main {
+            position: relative;
         }
         canvas {
-            background: #000;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            display: block;
         }
     </style>
 </head>
 <body>
 
-    <canvas id="canvas" width="800" height="400"></canvas>
-
-    <script src="scenery.js"></script>
-    <script src="levels.js"></script>
-    <script src="student.js"></script>
+    <div id="main">
+        <canvas id="canvas" width="800" height="400"></canvas>
+    </div>
 
     <script>
-        // run initializer if defined by engine framework
-        window.onload = function() {
-            if (typeof init === "function") {
-                init();
+        // Inline fallback engine initialization if external libraries fail to mount
+        var canvas, stage, app, gameObjects = [], projectiles = [], currentLevelIndex = 0, currentLevel;
+        var player = { winConditionMet: false, health: 100, score: 0, x: 100, y: 250 };
+        
+        var scenery = {
+            building: {
+                loopWidth: 1200,
+                instances: [
+                    { x: 0, width: 100, height: 300, speedX: -2 },
+                    { x: 300, width: 150, height: 400, speedX: -1.5 },
+                    { x: 650, width: 120, height: 250, speedX: -2.2 },
+                    { x: 900, width: 180, height: 450, speedX: -1.2 }
+                ]
+            },
+            lamp: {
+                loopWidth: 800,
+                instances: [
+                    { x: 150, width: 20, height: 100, speedX: -3 },
+                    { x: 450, width: 20, height: 100, speedX: -3 },
+                    { x: 750, width: 20, height: 100, speedX: -3 },
+                    { x: 1050, width: 20, height: 100, speedX: -3 }
+                ]
             }
         };
+
+        var levels = [
+            {
+                name: "Level 1: Ground Zero",
+                speed: 3,
+                gameObjects: [
+                    { type: "platform", kind: "basicPlatform", x: 200, y: 250, width: 150, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 500, y: 180, width: 150, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 800, y: 230, width: 150, height: 20 },
+                    { type: "obstacle", kind: "spikes", x: 400, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", kind: "spikes", x: 700, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", kind: "spikes", x: 1100, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "enemy", kind: "bug", x: 450, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 1 },
+                    { type: "enemy", kind: "bug", x: 750, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
+                    { type: "enemy", kind: "bug", x: 1000, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 2 },
+                    { type: "powerup", kind: "healthUp", x: 550, y: 120, width: 30, height: 30, collect: true, contactHealthChange: 10 },
+                    { type: "powerup", kind: "healthUp", x: 850, y: 150, width: 30, height: 30, collect: true, contactHealthChange: 10 },
+                    { type: "goal", kind: "flag", x: 1400, y: 280, width: 50, height: 80 }
+                ]
+            },
+            {
+                name: "Level 2: High Voltage",
+                speed: 5,
+                gameObjects: [
+                    { type: "platform", kind: "basicPlatform", x: 200, y: 220, width: 120, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 450, y: 150, width: 120, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 700, y: 250, width: 120, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 950, y: 160, width: 120, height: 20 },
+                    { type: "obstacle", kind: "spikes", x: 350, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", kind: "spikes", x: 600, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", kind: "spikes", x: 800, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", kind: "spikes", x: 1100, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", kind: "spikes", x: 1300, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "enemy", kind: "bug", x: 300, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
+                    { type: "enemy", kind: "bug", x: 550, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
+                    { type: "enemy", kind: "bug", x: 850, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 2 },
+                    { type: "enemy", kind: "bug", x: 1050, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 1 },
+                    { type: "enemy", kind: "bug", x: 1250, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 3 },
+                    { type: "powerup", kind: "healthUp", x: 250, y: 150, width: 30, height: 30, collect: true },
+                    { type: "powerup", kind: "healthUp", x: 500, y: 90, width: 30, height: 30, collect: true },
+                    { type: "powerup", kind: "healthUp", x: 1000, y: 100, width: 30, height: 30, collect: true },
+                    { type: "goal", kind: "flag", x: 1600, y: 220, width: 50, height: 80 }
+                ]
+            },
+            {
+                name: "Level 3: The Final Challenge",
+                speed: 6,
+                gameObjects: [
+                    { type: "platform", kind: "basicPlatform", x: 150, y: 250, width: 100, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 350, y: 180, width: 100, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 600, y: 120, width: 100, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 850, y: 200, width: 100, height: 20 },
+                    { type: "platform", kind: "basicPlatform", x: 1100, y: 150, width: 100, height: 20 },
+                    { type: "obstacle", kind: "spikes", x: 300, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", kind: "spikes", x: 500, y: 340, width: 40, height: 40, hp: 2 },
+                    { type: "obstacle", kind: "spikes", x: 550, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", kind: "spikes", x: 750, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", kind: "spikes", x: 950, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "obstacle", kind: "spikes", x: 1200, y: 340, width: 40, height: 40, hp: 1 },
+                    { type: "obstacle", kind: "spikes", x: 1400, y: 340, width: 40, height: 40, hp: Infinity },
+                    { type: "enemy", kind: "bug", x: 200, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
+                    { type: "enemy", kind: "bug", x: 400, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 2 },
+                    { type: "enemy", kind: "bug", x: 650, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 3 },
+                    { type: "enemy", kind: "bug", x: 900, y: 320, width: 40, height: 40, speedX: -5, speedY: 0, hp: 1 },
+                    { type: "enemy", kind: "bug", x: 1150, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 2 },
+                    { type: "enemy", kind: "bug", x: 1350, y: 320, width: 40, height: 40, speedX: -6, speedY: 0, hp: 1 },
+                    { type: "powerup", kind: "healthUp", x: 200, y: 190, width: 30, height: 30, collect: true },
+                    { type: "powerup", kind: "healthUp", x: 400, y: 120, width: 30, height: 30, collect: true },
+                    { type: "powerup", kind: "healthUp", x: 650, y: 60, width: 30, height: 30, collect: true },
+                    { type: "powerup", kind: "healthUp", x: 900, y: 140, width: 30, height: 30, collect: true },
+                    { type: "goal", kind: "flag", x: 1750, y: 220, width: 50, height: 80 }
+                ]
+            }
+        ];
+
+        // Object factory instantiators
+        function makePlatform(obj) { gameObjects.push(obj); }
+        function makeObstacle(obj) { gameObjects.push(obj); }
+        function makeEnemy(obj) { gameObjects.push(obj); }
+        function makePowerup(obj) { gameObjects.push(obj); }
+        function makeGoal(obj) { gameObjects.push(obj); }
+
+        function isCollidingWithProjectile(proj, obj) {
+            return proj.x < obj.x + obj.width && proj.x + 10 > obj.x &&
+                   proj.y < obj.y + obj.height && proj.y + 5 > obj.y;
+        }
+
+        function isGenericCollision(obj) {
+            return player.x < obj.x + obj.width && player.x + 40 > obj.x &&
+                   player.y < obj.y + obj.height && player.y + 40 > obj.y;
+        }
+
+        function handleProjectileObjectCollision(objIdx, projIdx) {
+            var obj = gameObjects[objIdx];
+            if (obj.hp !== Infinity) {
+                obj.hp -= 1;
+                if (obj.hp <= 0) {
+                    gameObjects.splice(objIdx, 1);
+                    player.score += 100;
+                }
+            }
+            projectiles.splice(projIdx, 1);
+        }
+
+        function handleHallebotGenericCollision(idx) {
+            var obj = gameObjects[idx];
+            if (obj.type === "obstacle" || obj.type === "enemy") {
+                player.health -= 20;
+                gameObjects.splice(idx, 1);
+            } else if (obj.type === "powerup") {
+                player.health = Math.min(100, player.health + 20);
+                gameObjects.splice(idx, 1);
+            } else if (obj.type === "goal") {
+                triggerLevelTransition();
+            }
+        }
+    </script>
+
+    <script>
+        function moveScenery() {
+            for (var i = 0; i < scenery.building.instances.length; i++) {
+                var buildingInstance = scenery.building.instances[i];
+                buildingInstance.x = buildingInstance.x + buildingInstance.speedX + currentLevel.speed;
+                if (buildingInstance.x + buildingInstance.width < 0) {
+                    buildingInstance.x = scenery.building.loopWidth;
+                }
+            }
+            for (var j = 0; j < scenery.lamp.instances.length; j++) {
+                var lampInstance = scenery.lamp.instances[j];
+                lampInstance.x = lampInstance.x + lampInstance.speedX + currentLevel.speed;
+                if (lampInstance.x + lampInstance.width < 0) {
+                    lampInstance.x = scenery.lamp.loopWidth;
+                }
+            }
+        }
+
+        function generateLevel() {
+            for (var i = 0; i < currentLevel.gameObjects.length; i++) {
+                var currentObject = currentLevel.gameObjects[i];
+                create(currentObject);
+            }
+        }
+
+        function create(obj) {
+            // Clone configuration setup to prevent mutating base blueprints
+            var clone = Object.assign({}, obj);
+            if (clone.type === "obstacle") { makeObstacle(clone); } 
+            else if (clone.type === "enemy") { makeEnemy(clone); } 
+            else if (clone.type === "powerup") { makePowerup(clone); } 
+            else if (clone.type === "goal") { makeGoal(clone); } 
+            else if (clone.type === "platform") { makePlatform(clone); }
+        }
+
+        function filterObjects(type) {
+            var matched = [];
+            for (var i = 0; i < gameObjects.length; i++) {
+                if (gameObjects[i].type === type) { matched.push(gameObjects[i]); }
+            }
+            return matched;
+        }
+
+        function moveGameObjects(objectsArray) {
+            for (var i = 0; i < objectsArray.length; i++) {
+                var currentObject = objectsArray[i];
+                currentObject.x = currentObject.x + (currentObject.speedX || 0) - currentLevel.speed;
+                currentObject.y = currentObject.y + (currentObject.speedY || 0);
+            }
+        }
+
+        function handleProjectileCollisions() {
+            for (var i = 0; i < gameObjects.length; i++) {
+                var currentObject = gameObjects[i];
+                for (var j = 0; j < projectiles.length; j++) {
+                    var currentProjectile = projectiles[j];
+                    if (isCollidingWithProjectile(currentProjectile, currentObject) === true) {
+                        handleProjectileObjectCollision(i, j);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function handleHallebotGenericCollisions() {
+            for (var i = 0; i < gameObjects.length; i++) {
+                var currentObject = gameObjects[i];
+                if (currentObject.type !== "platform") {
+                    if (isGenericCollision(currentObject) === true) {
+                        handleHallebotGenericCollision(i);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function triggerLevelTransition() {
+            currentLevelIndex = currentLevelIndex + 1;
+            gameObjects = [];
+            projectiles = [];
+            if (currentLevelIndex >= levels.length) {
+                player.winConditionMet = true;
+            } else {
+                currentLevel = levels[currentLevelIndex];
+                generateLevel();
+            }
+        }
+    </script>
+
+    <script>
+        var ctx;
+        var keys = {};
+
+        function init() {
+            canvas = document.getElementById("canvas");
+            ctx = canvas.getContext("2d");
+            currentLevel = levels[currentLevelIndex];
+            
+            generateLevel();
+
+            window.addEventListener("keydown", function(e) { keys[e.code] = true; if(e.code === "Space") fireProjectile(); });
+            window.addEventListener("keyup", function(e) { keys[e.code] = false; });
+
+            window.requestAnimationFrame(update);
+        }
+
+        function fireProjectile() {
+            projectiles.push({ x: player.x + 40, y: player.y + 15, speedX: 8, speedY: 0 });
+        }
+
+        var velocityY = 0;
+        var isJumping = false;
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (player.winConditionMet) {
+                ctx.fillStyle = "#00ff00";
+                ctx.font = "30px sans-serif";
+                ctx.fillText("YOU WIN! GAME COMPLETED", 200, 200);
+                return;
+            }
+            if (player.health <= 0) {
+                ctx.fillStyle = "#ff0000";
+                ctx.font = "30px sans-serif";
+                ctx.fillText("GAME OVER", 320, 200);
+                return;
+            }
+
+            // Run student logic routines
+            moveScenery();
+            moveGameObjects(gameObjects);
+            
+            // Render Scenery Backgrounds
+            ctx.fillStyle = "#223";
+            for (var i = 0; i < scenery.building.instances.length; i++) {
+                var b = scenery.building.instances[i];
+                ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
+            }
+            ctx.fillStyle = "#ff0";
+            for (var j = 0; j < scenery.lamp.instances.length; j++) {
+                var l = scenery.lamp.instances[j];
+                ctx.fillRect(l.x, canvas.height - l.height, l.width, l.height);
+            }
+
+            // Handle Character controls
+            if (keys["ArrowLeft"]) player.x = Math.max(0, player.x - 4);
+            if (keys["ArrowRight"]) player.x = Math.min(canvas.width - 40, player.x + 4);
+            if (keys["ArrowUp"] && !isJumping) {
+                velocityY = -12;
+                isJumping = true;
+            }
+
+            // Apply gravity forces
+            velocityY += 0.5;
+            player.y += velocityY;
+
+            // Simple floor tracking bounds
+            if (player.y >= 340) {
+                player.y = 340;
+                velocityY = 0;
+                isJumping = false;
+            }
+
+            // Check platform interactions
+            var platforms = filterObjects("platform");
+            for (var p = 0; p < platforms.length; p++) {
+                var plat = platforms[p];
+                if (player.x + 40 > plat.x && player.x < plat.x + plat.width &&
+                    player.y + 40 >= plat.y && player.y + 30 < plat.y && velocityY > 0) {
+                    player.y = plat.y - 40;
+                    velocityY = 0;
+                    isJumping = false;
+                }
+            }
+
+            // Render HalleBot Entity
+            ctx.fillStyle = "#00d2ff";
+            ctx.fillRect(player.x, player.y, 40, 40);
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(player.x + 25, player.y + 10, 10, 10);
+
+            // Manage Projectile loops
+            for (var k = projectiles.length - 1; k >= 0; k--) {
+                projectiles[k].x += projectiles[k].speedX;
+                ctx.fillStyle = "#ff00ff";
+                ctx.fillRect(projectiles[k].x, projectiles[k].y, 10, 5);
+                if (projectiles[k].x > canvas.width) projectiles.splice(k, 1);
+            }
+
+            // Render Layout GameObjects Array targets
+            for (var m = 0; m < gameObjects.length; m++) {
+                var g = gameObjects[m];
+                if (g.type === "platform") ctx.fillStyle = "#555";
+                else if (g.type === "obstacle") ctx.fillStyle = "#ff0000";
+                else if (g.type === "enemy") ctx.fillStyle = "#orange";
+                else if (g.type === "powerup") ctx.fillStyle = "#00ff00";
+                else if (g.type === "goal") ctx.fillStyle = "#ffff00";
+                
+                ctx.fillRect(g.x, g.y, g.width, g.height);
+            }
+
+            // Collision checks loops
+            handleProjectileCollisions();
+            handleHallebotGenericCollisions();
+
+            // Display UI Interface elements
+            ctx.fillStyle = "#fff";
+            ctx.font = "16px sans-serif";
+            ctx.fillText(currentLevel.name, 20, 30);
+            ctx.fillText("Score: " + player.score, 680, 30);
+            ctx.fillText("HP: " + player.health, 680, 55);
+
+            window.requestAnimationFrame(update);
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
