@@ -156,7 +156,7 @@
             update() {
                 if (!this.player || gameState !== 'playing') return;
                 
-                const speed = 26;
+                const speed = 30;
                 if (this.keys['w'] || this.keys['arrowup']) this.player.y -= speed;
                 if (this.keys['s'] || this.keys['arrowdown']) this.player.y += speed;
                 if (this.keys['a'] || this.keys['arrowleft']) this.player.x -= speed;
@@ -203,7 +203,7 @@
         }
 
         // TODO 3 & TODO 7: Draw 69 Circles
-        for (var i = 0; i < 69; i++) {
+        for (var i = 0; i < 6000; i++) {
             drawCircle();
         }
 
