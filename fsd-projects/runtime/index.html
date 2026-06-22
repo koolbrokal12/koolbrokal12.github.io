@@ -1,144 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Runtime Neo: Hallebot Edition</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Cyber Run // Arcade Edition</title>
     <style>
-        body {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            color: #fff;
+        }
+        body {
+            background: #06060c;
+            color: #ffffff;
             font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
             overflow: hidden;
         }
-        #game-container {
+        #game-frame {
             position: relative;
-            box-shadow: 0 0 50px rgba(0, 255, 255, 0.15);
-            border: 2px solid #334;
-            border-radius: 8px;
+            border: 3px solid #ff007f;
+            border-radius: 4px;
+            box-shadow: 0 0 25px rgba(255, 0, 127, 0.4);
         }
         canvas {
-            background-color: #05050a;
             display: block;
-            border-radius: 6px;
+            background: #0b0b16;
+        }
+        .control-panel {
+            margin-top: 15px;
+            color: #00ffcc;
+            font-size: 14px;
+            text-shadow: 0 0 8px rgba(0, 255, 204, 0.3);
+            text-align: center;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <canvas id="canvas" width="800" height="400"></canvas>
+    <div id="game-frame">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+    </div>
+
+    <div class="control-panel">
+        <strong>[A / D]</strong> or <strong>[Arrows]</strong> Move &bull; <strong>[W / Up]</strong> Jump &bull; <strong>[Spacebar]</strong> Fire Laser<br>
+        <span style="color: #00ffff;">Blue Box: Gives slow, high-damage TRIPLE SHOT!</span>
     </div>
 
     <script>
-        class Cyberplatformer {
+        class GameEngine {
             constructor() {
-                this.canvas = document.getElementById("canvas");
+                this.canvas = document.getElementById("gameCanvas");
                 this.ctx = this.canvas.getContext("2d");
                 
-                this.currentLevelIndex = 0;
-                this.activeEntities = [];
-                this.projectiles = [];
-                this.particles = [];
-                this.controls = {};
-                
-                // --- HALLEBOT PLAYER STATS ---
-                this.player = { 
-                    x: 100, 
-                    y: 340,
-                    width: 40,  // Made a little wider to fit the robot body
-                    height: 40,
-                    vx: 0,
-                    vy: 0,
-                    speed: 4.5,
+                this.player = {
+                    x: 120,
+                    y: 325,
+                    width: 46,
+                    height: 55,
+                    velocityX: 0,
+                    velocityY: 0,
+                    acceleration: 0.65,
                     friction: 0.82,
                     gravity: 0.55,
                     jumpForce: -11.5,
-                    isJumping: false,
-                    health: 100, 
-                    maxHealth: 100,
-                    score: 0, 
-                    hasWon: false,
-                    // Looks for an image file, but we have a backup draw plan below!
-                    image: new Image()
+                    isGrounded: true,
+                    energy: 100,
+                    maxEnergy: 100,
+                    score: 0,
+                    // Weapon Mod states
+                    hasTripleShot: false,
+                    lastShotTime: 0,
+                    shotCooldown: 250 // Base speed (milliseconds between shots)
                 };
-                this.player.image.src = 'hallebot.png'; 
 
-                this.scenery = {
-                    buildings: [
-                        { x: 50, w: 120, h: 280, color: '#131326', speed: 0.4 },
-                        { x: 350, w: 180, h: 350, color: '#181830', speed: 0.2 },
-                        { x: 680, w: 140, h: 220, color: '#111122', speed: 0.5 }
+                this.keyboard = {};
+                this.currentLevel = 0;
+                this.lapCount = 1;
+                this.scrollSpeed = 0;
+
+                this.background = {
+                    skyline: [
+                        { x: 40, width: 130, height: 290, color: '#121224', factor: 0.3 },
+                        { x: 380, width: 190, height: 340, color: '#16162c', factor: 0.15 },
+                        { x: 650, width: 150, height: 240, color: '#101020', factor: 0.4 }
                     ],
                     lamps: [
-                        { x: 200, color: 'rgba(0, 255, 255, 0.15)' },
-                        { x: 600, color: 'rgba(255, 0, 128, 0.15)' }
+                        { x: 250, glow: 'rgba(0, 255, 255, 0.12)' },
+                        { x: 650, glow: 'rgba(255, 0, 127, 0.12)' }
                     ]
                 };
 
                 this.levels = [
                     {
-                        name: "SECTOR_01 // Neon Grid",
-                        scrollSpeed: 2.5,
-                        objects: [
+                        name: "SECTOR 01 // THE DIGITAL GRID",
+                        baseSpeed: 2.5,
+                        layout: [
                             { type: "platform", x: 220, y: 260, w: 160, h: 15, color: '#00ffff' },
-                            { type: "platform", x: 520, y: 190, w: 140, h: 15, color: '#ff0080' },
-                            { type: "obstacle", x: 450, y: 345, w: 35, h: 35, hp: Infinity, color: '#4a4e69' },
-                            { type: "enemy", x: 400, y: 345, w: 35, h: 35, hp: 1, vx: -1.5, range: 120, startX: 400, color: '#ff3333' },
-                            { type: "enemy", x: 850, y: 345, w: 35, h: 35, hp: 2, vx: -1, range: 200, startX: 850, color: '#ff3333' },
-                            { type: "powerup", x: 580, y: 130, w: 20, h: 20, color: '#39ff14' },
-                            { type: "goal", x: 1350, y: 300, w: 40, h: 80, color: '#ffff00' }
+                            { type: "platform", x: 520, y: 190, w: 140, h: 15, color: '#ff007f' },
+                            { type: "obstacle", x: 450, y: 345, w: 35, h: 35, health: 3, color: '#3d405b' },
+                            { type: "enemy", x: 400, y: 345, w: 35, h: 35, health: 1, velocityX: -1.5, patrolRange: 120, spawnX: 400, color: '#ff3333' },
+                            { type: "enemy", x: 850, y: 345, w: 35, h: 35, health: 2, velocityX: -1, patrolRange: 200, spawnX: 850, color: '#ff3333' },
+                            
+                            { type: "battery", x: 290, y: 220, w: 20, h: 20, color: '#39ff14' },
+                            { type: "battery", x: 580, y: 130, w: 20, h: 20, color: '#39ff14' },
+                            
+                            // NEW BLUE TRIPLE SHOT UPGRADE BOX
+                            { type: "upgrade", x: 690, y: 345, w: 20, h: 20, color: '#0070ff' },
+                            
+                            { type: "battery", x: 1000, y: 345, w: 20, h: 20, color: '#39ff14' },
+                            { type: "portal", x: 1350, y: 300, w: 40, h: 80, color: '#ffff00' }
                         ]
                     },
                     {
-                        name: "SECTOR_02 // Overclock",
-                        scrollSpeed: 3.5,
-                        objects: [
-                            { type: "platform", x: 180, y: 240, w: 140, h: 15, color: '#00ffff' },
-                            { type: "platform", x: 440, y: 170, w: 140, h: 15, color: '#ff0080' },
-                            { type: "platform", x: 720, y: 230, w: 140, h: 15, color: '#00ffff' },
-                            { type: "enemy", x: 480, y: 135, w: 35, h: 35, hp: 1, vx: -2, range: 80, startX: 480, color: '#ff3333' },
-                            { type: "obstacle", x: 620, y: 345, w: 35, h: 35, hp: 3, color: '#4a4e69' },
-                            { type: "powerup", x: 490, y: 90, w: 20, h: 20, color: '#39ff14' },
-                            { type: "goal", x: 1200, y: 300, w: 40, h: 80, color: '#ffff00' }
+                        name: "SECTOR 02 // THE NEON HIGHWAY",
+                        baseSpeed: 3.5,
+                        layout: [
+                            { type: "platform", x: 180, y: 280, w: 140, h: 15, color: '#00ffff' },
+                            { type: "platform", x: 440, y: 230, w: 140, h: 15, color: '#ff007f' },
+                            { type: "platform", x: 720, y: 290, w: 140, h: 15, color: '#00ffff' },
+                            { type: "obstacle", x: 340, y: 345, w: 35, h: 35, health: 3, velocityY: -2, minY: 300, maxY: 345, color: '#ff0055' },
+                            { type: "enemy", x: 480, y: 195, w: 35, h: 35, health: 1, velocityX: -2, patrolRange: 80, spawnX: 480, color: '#ff3333' },
+                            
+                            // NEW BLUE TRIPLE SHOT UPGRADE BOX
+                            { type: "upgrade", x: 520, y: 180, w: 20, h: 20, color: '#0070ff' },
+                            
+                            { type: "obstacle", x: 620, y: 345, w: 35, h: 35, health: 3, velocityY: -3, minY: 310, maxY: 345, color: '#ff0055' },
+                            
+                            { type: "battery", x: 240, y: 240, w: 20, h: 20, color: '#39ff14' },
+                            { type: "battery", x: 780, y: 250, w: 20, h: 20, color: '#39ff14' },
+                            { type: "battery", x: 950, y: 345, w: 20, h: 20, color: '#39ff14' },
+                            
+                            { type: "portal", x: 1200, y: 300, w: 40, h: 80, color: '#ffff00' }
                         ]
                     }
                 ];
             }
 
-            init() {
-                this.activeLevel = this.levels[this.currentLevelIndex];
-                this.loadEntities();
-                this.bindInput();
+            boot() {
+                this.buildLevel();
+                this.listenToInput();
                 this.loop();
             }
 
-            loadEntities() {
-                this.activeEntities = this.activeLevel.objects.map(obj => ({ ...obj }));
+            buildLevel() {
+                this.stageData = this.levels[this.currentLevel];
+                this.scrollSpeed = this.stageData.baseSpeed + (this.lapCount - 1) * 1.5;
+                
+                this.activeEntities = this.stageData.layout.map(entity => ({ ...entity }));
                 this.projectiles = [];
                 this.particles = [];
             }
 
-            bindInput() {
+            listenToInput() {
                 window.addEventListener("keydown", e => {
-                    this.controls[e.code] = true;
+                    this.keyboard[e.code] = true;
                     if (e.code === "Space") {
                         e.preventDefault();
-                        this.fireLaser();
+                        this.fireWeapon();
                     }
                     if (["ArrowUp", "ArrowDown", "Space"].includes(e.code)) e.preventDefault();
                 });
-                window.addEventListener("keyup", e => this.controls[e.code] = false);
+                window.addEventListener("keyup", e => this.keyboard[e.code] = false);
             }
 
-            spawnExplosion(x, y, color, count = 8) {
-                for(let i=0; i<count; i++) {
+            emitParticles(x, y, color, count = 8) {
+                for(let i = 0; i < count; i++) {
                     this.particles.push({
                         x, y,
                         vx: (Math.random() - 0.5) * 6,
@@ -150,61 +182,86 @@
                 }
             }
 
-            fireLaser() {
-                if (this.player.health <= 0 || this.player.hasWon) return;
-                this.projectiles.push({
-                    x: this.player.x + this.player.width,
-                    y: this.player.y + this.player.height / 2 - 2,
-                    w: 20, h: 4, speed: 12
-                });
-                this.spawnExplosion(this.player.x + this.player.width, this.player.y + this.player.height/2, '#00ffff', 3);
-            }
-
-            checkCollision(r1, r2) {
-                return r1.x < r2.x + (r2.w || r2.width) &&
-                       r1.x + (r1.w || r1.width) > r2.x &&
-                       r1.y < r2.y + (r2.h || r2.height) &&
-                       r1.y + (r1.h || r1.height) > r2.y;
-            }
-
-            update() {
-                if (this.player.health <= 0 || this.player.hasWon) return;
-
-                if (this.controls["KeyA"] || this.controls["ArrowLeft"]) this.player.vx -= this.player.speed * 0.15;
-                if (this.controls["KeyD"] || this.controls["ArrowRight"]) this.player.vx += this.player.speed * 0.15;
+            fireWeapon() {
+                if (this.player.energy <= 0) return;
                 
-                if ((this.controls["KeyW"] || this.controls["ArrowUp"]) && !this.player.isJumping) {
-                    this.player.vy = this.player.jumpForce;
-                    this.player.isJumping = true;
+                let currentTime = Date.now();
+                if (currentTime - this.player.lastShotTime < this.player.shotCooldown) {
+                    return; // Too fast! Blocking shot due to cooldown
+                }
+                
+                this.player.lastShotTime = currentTime;
+
+                if (this.player.hasTripleShot) {
+                    // TRIPLE BLUE HIGH-DAMAGE BLAST (Slow speed fire rate)
+                    // Center Shot
+                    this.projectiles.push({ x: this.player.x + this.player.width + 2, y: this.player.y + 32, w: 22, h: 6, speed: 12, velocityY: 0, damage: 3, color: '#00bcff' });
+                    // Angled Up Shot
+                    this.projectiles.push({ x: this.player.x + this.player.width + 2, y: this.player.y + 26, w: 22, h: 6, speed: 12, velocityY: -2, damage: 3, color: '#00bcff' });
+                    // Angled Down Shot
+                    this.projectiles.push({ x: this.player.x + this.player.width + 2, y: this.player.y + 38, w: 22, h: 6, speed: 12, velocityY: 2, damage: 3, color: '#00bcff' });
+                    
+                    this.emitParticles(this.player.x + this.player.width, this.player.y + 32, '#00bcff', 6);
+                } else {
+                    // REGULAR GREEN SHOT
+                    this.projectiles.push({ x: this.player.x + this.player.width + 2, y: this.player.y + 32, w: 20, h: 4, speed: 12, velocityY: 0, damage: 1, color: '#00ffff' });
+                    this.emitParticles(this.player.x + this.player.width, this.player.y + 32, '#00ffff', 3);
+                }
+            }
+
+            getIntersection(rect1, rect2) {
+                return rect1.x < rect2.x + rect2.w &&
+                       rect1.x + rect1.width > rect2.x &&
+                       rect1.y < rect2.y + rect2.h &&
+                       rect1.y + rect1.height > rect2.y;
+            }
+
+            updateGameObjects() {
+                if (this.player.energy <= 0) return;
+
+                let depletion = 0.01;
+                this.player.energy = Math.max(0, this.player.energy - (depletion * this.lapCount));
+
+                if (this.keyboard["KeyA"] || this.keyboard["ArrowLeft"]) this.player.velocityX -= this.player.acceleration;
+                if (this.keyboard["KeyD"] || this.keyboard["ArrowRight"]) this.player.velocityX += this.player.acceleration;
+                
+                if ((this.keyboard["KeyW"] || this.keyboard["ArrowUp"]) && this.player.isGrounded) {
+                    this.player.velocityY = this.player.jumpForce;
+                    this.player.isGrounded = false;
                 }
 
-                this.player.vx *= this.player.friction;
-                this.player.vy += this.player.gravity;
+                this.player.velocityX *= this.player.friction;
+                this.player.velocityY += this.player.gravity;
 
-                this.player.x += this.player.vx;
-                this.player.y += this.player.vy;
+                this.player.x += this.player.velocityX;
+                this.player.y += this.player.velocityY;
 
-                if (this.player.y >= 340) {
-                    this.player.y = 340;
-                    this.player.vy = 0;
-                    this.player.isJumping = false;
+                let onSolidSurface = false;
+                if (this.player.y >= 380 - this.player.height) {
+                    this.player.y = 380 - this.player.height;
+                    this.player.velocityY = 0;
+                    this.player.isGrounded = true;
+                    onSolidSurface = true;
                 }
 
                 if (this.player.x < 0) this.player.x = 0;
-                if (this.player.x > this.canvas.width - this.player.width) this.player.x = this.canvas.width - this.player.width;
+                if (this.player.x > this.canvas.width - this.player.width) this.canvas.width - this.player.width;
 
-                this.scenery.buildings.forEach(b => {
-                    b.x -= this.activeLevel.scrollSpeed * b.speed;
-                    if (b.x + b.w < 0) b.x = this.canvas.width + Math.random() * 100;
+                this.background.skyline.forEach(building => {
+                    building.x -= this.scrollSpeed * building.factor;
+                    if (building.x + building.width < 0) building.x = this.canvas.width + Math.random() * 100;
                 });
-                this.scenery.lamps.forEach(l => {
-                    l.x -= this.activeLevel.scrollSpeed;
-                    if (l.x + 40 < 0) l.x = this.canvas.width + 200;
+                this.background.lamps.forEach(lamp => {
+                    lamp.x -= this.scrollSpeed;
+                    if (lamp.x + 40 < 0) lamp.x = this.canvas.width + 200;
                 });
 
-                this.projectiles.forEach((p, index) => {
-                    p.x += p.speed;
-                    if (p.x > this.canvas.width) this.projectiles.splice(index, 1);
+                this.projectiles.forEach((laser, index) => {
+                    laser.x += laser.speed;
+                    laser.y += laser.velocityY; // Handles spread angle vectors
+                    if (laser.x > this.canvas.width || laser.y < 0 || laser.y > this.canvas.height) {
+                        this.projectiles.splice(index, 1);
+                    }
                 });
 
                 this.particles.forEach((p, idx) => {
@@ -213,26 +270,32 @@
                     if(p.alpha <= 0) this.particles.splice(idx, 1);
                 });
 
-                let speed = this.activeLevel.scrollSpeed;
                 for (let i = this.activeEntities.length - 1; i >= 0; i--) {
-                    let ent = this.activeEntities[i];
-                    ent.x -= speed;
+                    let entity = this.activeEntities[i];
+                    entity.x -= this.scrollSpeed;
 
-                    if (ent.type === "enemy") {
-                        ent.x += ent.vx;
-                        if (Math.abs(ent.x - ent.startX) > ent.range) {
-                            ent.vx *= -1;
+                    if (entity.type === "enemy" && entity.velocityX) {
+                        entity.x += entity.velocityX;
+                        if (Math.abs(entity.x - entity.spawnX) > entity.patrolRange) {
+                            entity.velocityX *= -1;
                         }
                     }
 
-                    this.projectiles.forEach((proj, pIdx) => {
-                        if (this.checkCollision(proj, ent)) {
-                            if (ent.type === "enemy" || ent.type === "obstacle") {
+                    if (entity.velocityY) {
+                        entity.y += entity.velocityY;
+                        if (entity.y <= entity.minY || entity.y >= entity.maxY) {
+                            entity.velocityY *= -1; 
+                        }
+                    }
+
+                    this.projectiles.forEach((laser, pIdx) => {
+                        if (laser.x < entity.x + entity.w && laser.x + laser.w > entity.x && laser.y < entity.y + entity.h && laser.y + laser.h > entity.y) {
+                            if (entity.type === "enemy" || entity.type === "obstacle") {
                                 this.projectiles.splice(pIdx, 1);
-                                ent.hp--;
-                                this.spawnExplosion(proj.x, proj.y, '#ff0080', 5);
-                                if (ent.hp <= 0) {
-                                    this.spawnExplosion(ent.x + ent.w/2, ent.y + ent.h/2, ent.color, 15);
+                                entity.health -= laser.damage; // Applying damage value based on weapon type
+                                this.emitParticles(laser.x, laser.y, '#ff007f', 5);
+                                if (entity.health <= 0) {
+                                    this.emitParticles(entity.x + entity.w/2, entity.y + entity.h/2, entity.color, 15);
                                     this.activeEntities.splice(i, 1);
                                     this.player.score += 50;
                                 }
@@ -240,83 +303,100 @@
                         }
                     });
 
-                    if (this.checkCollision(this.player, ent)) {
-                        if (ent.type === "platform") {
-                            if (this.player.vy > 0 && (this.player.y + this.player.height - this.player.vy) <= ent.y + 10) {
-                                this.player.y = ent.y - this.player.height;
-                                this.player.vy = 0;
-                                this.player.isJumping = false;
+                    if (this.getIntersection(this.player, entity)) {
+                        if (entity.type === "platform") {
+                            if (this.player.velocityY > 0 && (this.player.y + this.player.height - this.player.velocityY) <= entity.y + 12) {
+                                this.player.y = entity.y - this.player.height;
+                                this.player.velocityY = 0;
+                                this.player.isGrounded = true;
+                                onSolidSurface = true;
                             }
                         } 
-                        else if (ent.type === "enemy" || ent.type === "obstacle") {
-                            this.player.health = Math.max(0, this.player.health - 0.8);
-                            this.player.vx = -6;
-                            this.spawnExplosion(this.player.x + this.player.width/2, this.player.y + this.player.height/2, '#ff3333', 2);
+                        else if (entity.type === "enemy" || entity.type === "obstacle") {
+                            this.player.energy = Math.max(0, this.player.energy - 1.2); 
+                            this.player.velocityX = -6; 
+                            this.emitParticles(this.player.x + this.player.width/2, this.player.y + this.player.height/2, '#ff3333', 2);
                         } 
-                        else if (ent.type === "powerup") {
-                            this.spawnExplosion(ent.x, ent.y, ent.color, 12);
+                        else if (entity.type === "battery") {
+                            this.emitParticles(entity.x, entity.y, entity.color, 12);
                             this.activeEntities.splice(i, 1);
                             this.player.score += 100;
-                            this.player.health = Math.min(this.player.maxHealth, this.player.health + 25);
+                            this.player.energy = Math.min(this.player.maxEnergy, this.player.energy + 30);
                         } 
-                        else if (ent.type === "goal") {
-                            if (this.currentLevelIndex + 1 < this.levels.length) {
-                                this.currentLevelIndex++;
-                                this.activeLevel = this.levels[this.currentLevelIndex];
-                                this.player.x = 100;
-                                this.player.vx = 0;
-                                this.loadEntities();
-                            } else {
-                                this.player.hasWon = true;
+                        else if (entity.type === "upgrade") {
+                            // COLLECT TRIPLE SHOT BLUE BOX
+                            this.emitParticles(entity.x, entity.y, '#00bcff', 16);
+                            this.activeEntities.splice(i, 1);
+                            this.player.score += 150;
+                            this.player.hasTripleShot = true;
+                            this.player.shotCooldown = 650; // SLOW FIRE RATE DEBUFF APPLIED
+                        }
+                        else if (entity.type === "portal") {
+                            this.currentLevel++;
+                            if (this.currentLevel >= this.levels.length) {
+                                this.currentLevel = 0;
+                                this.lapCount++;
                             }
+                            this.player.x = 100;
+                            this.player.velocityX = 0;
+                            // Reset gun mode when passing levels
+                            this.player.hasTripleShot = false;
+                            this.player.shotCooldown = 250;
+                            this.buildLevel();
                         }
                     }
                 }
+
+                if (!onSolidSurface && this.player.y < 380 - this.player.height) {
+                    this.player.isGrounded = false;
+                }
             }
 
-            draw() {
-                this.ctx.fillStyle = "#090912";
+            drawScene() {
+                this.ctx.fillStyle = "#0a0a14";
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                this.scenery.buildings.forEach(b => {
-                    this.ctx.fillStyle = b.color;
-                    this.ctx.fillRect(b.x, this.canvas.height - b.h, b.w, b.h);
+                this.background.skyline.forEach(building => {
+                    this.ctx.fillStyle = building.color;
+                    this.ctx.fillRect(building.x, this.canvas.height - building.height, building.width, building.height);
                     
-                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-                    for(let wG = 15; wG < b.w - 15; wG += 25) {
-                        for(let hG = 20; hG < b.h - 50; hG += 40) {
-                            this.ctx.fillRect(b.x + wG, (this.canvas.height - b.h) + hG, 10, 15);
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+                    for(let w = 15; w < building.width - 15; w += 25) {
+                        for(let h = 20; h < building.height - 50; h += 40) {
+                            this.ctx.fillRect(building.x + w, (this.canvas.height - building.height) + h, 10, 15);
                         }
                     }
                 });
 
-                this.scenery.lamps.forEach(l => {
-                    this.ctx.fillStyle = "#223";
-                    this.ctx.fillRect(l.x, 260, 6, 120);
-                    let gradient = this.ctx.createRadialGradient(l.x+3, 260, 5, l.x+3, 290, 60);
-                    gradient.addColorStop(0, l.color);
-                    gradient.addColorStop(1, 'transparent');
-                    this.ctx.fillStyle = gradient;
+                this.background.lamps.forEach(lamp => {
+                    this.ctx.fillStyle = "#1c1c28";
+                    this.ctx.fillRect(lamp.x, 260, 6, 120);
+                    let radialGlow = this.ctx.createRadialGradient(lamp.x+3, 260, 5, lamp.x+3, 290, 60);
+                    radialGlow.addColorStop(0, lamp.glow);
+                    radialGlow.addColorStop(1, 'transparent');
+                    this.ctx.fillStyle = radialGlow;
                     this.ctx.beginPath();
-                    this.ctx.arc(l.x+3, 260, 60, 0, Math.PI, false);
+                    this.ctx.arc(lamp.x+3, 260, 60, 0, Math.PI, false);
                     this.ctx.fill();
                 });
 
-                this.ctx.fillStyle = "#111122";
+                this.ctx.fillStyle = "#121225";
                 this.ctx.fillRect(0, 380, this.canvas.width, 20);
-                this.ctx.fillStyle = "#ff0080";
+                this.ctx.fillStyle = "#ff007f";
                 this.ctx.fillRect(0, 378, this.canvas.width, 2);
 
-                this.activeEntities.forEach(ent => {
-                    this.ctx.fillStyle = ent.color;
-                    this.ctx.shadowBlur = (ent.type !== "obstacle") ? 10 : 0;
-                    this.ctx.shadowColor = ent.color;
-                    this.ctx.fillRect(ent.x, ent.y, ent.w, ent.h);
+                this.activeEntities.forEach(entity => {
+                    this.ctx.fillStyle = entity.color;
+                    this.ctx.shadowBlur = (entity.type !== "obstacle") ? 10 : 0;
+                    this.ctx.shadowColor = entity.color;
+                    this.ctx.fillRect(entity.x, entity.y, entity.w, entity.h);
                 });
                 this.ctx.shadowBlur = 0;
 
-                this.ctx.fillStyle = "#00ffff";
-                this.projectiles.forEach(p => this.ctx.fillRect(p.x, p.y, p.w, p.h));
+                this.projectiles.forEach(p => {
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.fillRect(p.x, p.y, p.w, p.h);
+                });
 
                 this.particles.forEach(p => {
                     this.ctx.save();
@@ -328,85 +408,109 @@
                     this.ctx.restore();
                 });
 
-                // --- DRAWING HALLEBOT ---
-                if (this.player.image.complete && this.player.image.naturalWidth !== 0) {
-                    // This triggers if you have a real 'hallebot.png' image file ready
-                    this.ctx.drawImage(this.player.image, this.player.x, this.player.y, this.player.width, this.player.height);
-                } else {
-                    // Cool code backup that draws a retro robot avatar with a visor and antenna!
-                    this.ctx.save();
-                    this.ctx.shadowBlur = 15;
-                    this.ctx.shadowColor = "#39ff14";
-                    
-                    let px = this.player.x;
-                    let py = this.player.y;
+                let rx = this.player.x;
+                let ry = this.player.y;
+                
+                this.ctx.save();
+                this.ctx.shadowBlur = 8;
+                // Glow blue if upgraded, green if normal
+                this.ctx.shadowColor = this.player.hasTripleShot ? "#00bcff" : "#39ff14";
 
-                    // Wheels / Tread Base
-                    this.ctx.fillStyle = "#333344";
-                    this.ctx.fillRect(px + 4, py + 32, 32, 8);
+                // Top Head Antenna structure
+                this.ctx.fillStyle = "#20c20e";
+                this.ctx.fillRect(rx + 21, ry, 4, 8);
+                this.ctx.fillStyle = this.player.hasTripleShot ? "#00bcff" : "#39ff14";
+                this.ctx.beginPath();
+                this.ctx.arc(rx + 23, ry, 4, 0, Math.PI * 2);
+                this.ctx.fill();
 
-                    // Main Steel Body
-                    this.ctx.fillStyle = "#556677";
-                    this.ctx.fillRect(px + 6, py + 14, 28, 18);
+                // Main Head segment
+                this.ctx.fillStyle = "#28a745";
+                this.ctx.beginPath();
+                this.ctx.roundRect(rx + 6, ry + 8, 34, 20, 6);
+                this.ctx.fill();
 
-                    // Glowing Core Panel
-                    this.ctx.fillStyle = "#39ff14";
-                    this.ctx.fillRect(px + 12, py + 18, 16, 8);
+                // Glowing Optics
+                this.ctx.fillStyle = this.player.hasTripleShot ? "#00bcff" : "#00ffff";
+                this.ctx.beginPath();
+                this.ctx.arc(rx + 16, ry + 18, 4, 0, Math.PI * 2);
+                this.ctx.arc(rx + 30, ry + 18, 4, 0, Math.PI * 2);
+                this.ctx.fill();
 
-                    // Head
-                    this.ctx.fillStyle = "#778899";
-                    this.ctx.fillRect(px + 10, py + 2, 20, 12);
+                // Smile line assembly
+                this.ctx.strokeStyle = "#ffffff";
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(rx + 23, ry + 20, 4, 0, Math.PI);
+                this.ctx.stroke();
 
-                    // Cyber Visor Eyes
-                    this.ctx.fillStyle = "#00ffff";
-                    this.ctx.fillRect(px + 14, py + 5, 12, 4);
+                // Chassis body torso
+                this.ctx.fillStyle = "#218838";
+                this.ctx.beginPath();
+                this.ctx.roundRect(rx + 8, ry + 30, 30, 18, 4);
+                this.ctx.fill();
 
-                    // Antenna
-                    this.ctx.fillStyle = "#39ff14";
-                    this.ctx.fillRect(px + 19, py, 2, 2);
+                // Display screen component
+                this.ctx.fillStyle = this.player.hasTripleShot ? "#00bcff" : "#39ff14";
+                this.ctx.fillRect(rx + 14, ry + 34, 18, 10);
 
-                    this.ctx.restore();
-                }
+                // Arm appendages
+                this.ctx.fillStyle = "#1e7e34";
+                this.ctx.fillRect(rx, ry + 32, 8, 10);      
+                this.ctx.fillRect(rx + 38, ry + 32, 10, 6); 
 
-                // Diagnostics Interface UI
+                // Tread animation system
+                let dynamicBob = (Math.sin(Date.now() / 60) * 2);
+                this.ctx.fillStyle = "#141414";
+                this.ctx.fillRect(rx + 10, ry + 48 + (this.player.isGrounded ? dynamicBob : 0), 10, 7);
+                this.ctx.fillRect(rx + 26, ry + 48 + (this.player.isGrounded ? dynamicBob : 0), 10, 7);
+
+                this.ctx.restore();
+
+                // --- HUD INTERFACE RENDERER ---
                 this.ctx.textAlign = "left";
                 this.ctx.fillStyle = "rgba(255,255,255,0.85)";
                 this.ctx.font = "12px 'Courier New'";
-                this.ctx.fillText(this.activeLevel.name, 25, 35);
+                
+                let headerText = `${this.stageData.name} // LAP ${this.lapCount}`;
+                this.ctx.fillText(headerText, 25, 35);
                 this.ctx.fillText(`SCORE // ${String(this.player.score).padStart(5, '0')}`, 25, 55);
                 
-                this.ctx.fillStyle = "#222";
-                this.ctx.fillRect(25, 70, 150, 6);
-                this.ctx.fillStyle = this.player.health > 30 ? "#39ff14" : "#ff3333";
-                this.ctx.fillRect(25, 70, (this.player.health / this.player.maxHealth) * 150, 6);
+                let weaponName = this.player.hasTripleShot ? "BLASTER MOD: TRIPLE (HEAVY)" : "BLASTER MOD: STANDARD";
+                this.ctx.fillStyle = this.player.hasTripleShot ? "#00bcff" : "#00ffff";
+                this.ctx.fillText(weaponName, 25, 75);
 
-                if (this.player.health <= 0 || this.player.hasWon) {
-                    this.ctx.fillStyle = "rgba(4, 4, 8, 0.85)";
+                this.ctx.fillStyle = "rgba(255,255,255,0.85)";
+                this.ctx.fillText(`BATTERY RESERVE`, 25, 95);
+                this.ctx.fillStyle = "#1a1a26";
+                this.ctx.fillRect(25, 103, 150, 8);
+                this.ctx.fillStyle = this.player.energy > 35 ? "#39ff14" : "#ff3333";
+                this.ctx.fillRect(25, 103, (this.player.energy / this.player.maxEnergy) * 150, 8);
+
+                if (this.player.energy <= 0) {
+                    this.ctx.fillStyle = "rgba(5, 5, 10, 0.92)";
                     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                    this.ctx.textAlign = "center";
-                    this.ctx.font = "bold 28px 'Courier New'";
                     
-                    if (this.player.health <= 0) {
-                        this.ctx.fillStyle = "#ff3333";
-                        this.ctx.fillText("SYSTEM FAILURE // GAME OVER", this.canvas.width / 2, this.canvas.height / 2);
-                    } else {
-                        this.ctx.fillStyle = "#39ff14";
-                        this.ctx.fillText("BREACH SUCCESSFUL // YOU WIN", this.canvas.width / 2, this.canvas.height / 2);
-                    }
+                    this.ctx.textAlign = "center";
+                    this.ctx.font = "bold 25px 'Courier New'";
+                    this.ctx.fillStyle = "#ff3333";
+                    this.ctx.fillText("SYSTEM SHUTDOWN // ENERGY DEPLETED", this.canvas.width / 2, this.canvas.height / 2 - 15);
+                    
+                    this.ctx.font = "16px 'Courier New'";
+                    this.ctx.fillStyle = "#ffffff";
+                    this.ctx.fillText(`CYCLES RECORDED: ${this.lapCount} // TOTAL SCORES: ${this.player.score}`, this.canvas.width / 2, this.canvas.height / 2 + 25);
                 }
             }
 
             loop() {
-                this.update();
-                this.draw();
+                this.updateGameObjects();
+                this.drawScene();
                 requestAnimationFrame(() => this.loop());
             }
         }
 
-        window.onload = () => {
-            const game = new Cyberplatformer();
-            game.init();
-        };
+        const coreApp = new GameEngine();
+        coreApp.boot();
     </script>
 </body>
 </html>
