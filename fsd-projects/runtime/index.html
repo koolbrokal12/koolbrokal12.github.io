@@ -2,29 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Runtime Neo</title>
+    <title>Runtime Neo: Hallebot Edition</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #111;
+            background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             color: #fff;
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
         }
         #game-container {
             position: relative;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.15);
+            border: 2px solid #334;
+            border-radius: 8px;
         }
         canvas {
-            background-color: #000;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            background-color: #05050a;
             display: block;
-            border-radius: 4px;
+            border-radius: 6px;
         }
     </style>
 </head>
@@ -35,358 +37,376 @@
     </div>
 
     <script>
-        // --- GAME CONFIGURATION & STATE ---
-        let canvas, ctx;
-        let activeEntities = [];
-        let activeProjectiles = [];
-        let currentLevelIndex = 0;
-        let activeLevel = null;
-        
-        const player = { 
-            x: 100, 
-            y: 340, // Ground level baseline
-            width: 40,
-            height: 40,
-            velocityY: 0,
-            isJumping: false,
-            health: 200, 
-            score: 0, 
-            hasWon: false 
-        };
-        
-        const controls = {};
+        class Cyberplatformer {
+            constructor() {
+                this.canvas = document.getElementById("canvas");
+                this.ctx = this.canvas.getContext("2d");
+                
+                this.currentLevelIndex = 0;
+                this.activeEntities = [];
+                this.projectiles = [];
+                this.particles = [];
+                this.controls = {};
+                
+                // --- HALLEBOT PLAYER STATS ---
+                this.player = { 
+                    x: 100, 
+                    y: 340,
+                    width: 40,  // Made a little wider to fit the robot body
+                    height: 40,
+                    vx: 0,
+                    vy: 0,
+                    speed: 4.5,
+                    friction: 0.82,
+                    gravity: 0.55,
+                    jumpForce: -11.5,
+                    isJumping: false,
+                    health: 100, 
+                    maxHealth: 100,
+                    score: 0, 
+                    hasWon: false,
+                    // Looks for an image file, but we have a backup draw plan below!
+                    image: new Image()
+                };
+                this.player.image.src = 'hallebot.png'; 
 
-        const sceneryData = {
-            buildings: {
-                loopBounds: 1200,
-                elements: [
-                    { x: 0, width: 100, height: 300, parallaxSpeed: -2 },
-                    { x: 300, width: 150, height: 400, parallaxSpeed: -1.5 },
-                    { x: 650, width: 120, height: 250, parallaxSpeed: -2.2 },
-                    { x: 900, width: 180, height: 450, parallaxSpeed: -1.2 }
-                ]
-            },
-            lamps: {
-                loopBounds: 800,
-                elements: [
-                    { x: 150, width: 20, height: 100, parallaxSpeed: -3 },
-                    { x: 450, width: 20, height: 100, parallaxSpeed: -3 },
-                    { x: 750, width: 20, height: 100, parallaxSpeed: -3 },
-                    { x: 1050, width: 20, height: 100, parallaxSpeed: -3 }
-                ]
-            }
-        };
+                this.scenery = {
+                    buildings: [
+                        { x: 50, w: 120, h: 280, color: '#131326', speed: 0.4 },
+                        { x: 350, w: 180, h: 350, color: '#181830', speed: 0.2 },
+                        { x: 680, w: 140, h: 220, color: '#111122', speed: 0.5 }
+                    ],
+                    lamps: [
+                        { x: 200, color: 'rgba(0, 255, 255, 0.15)' },
+                        { x: 600, color: 'rgba(255, 0, 128, 0.15)' }
+                    ]
+                };
 
-        const levelData = [
-            {
-                name: "Level 1: Ground Zero",
-                scrollSpeed: 3,
-                mapObjects: [
-                    { type: "platform", x: 200, y: 250, width: 150, height: 20 },
-                    { type: "platform", x: 500, y: 180, width: 150, height: 20 },
-                    { type: "platform", x: 800, y: 230, width: 150, height: 20 },
-                    { type: "obstacle", x: 400, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", x: 700, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", x: 1100, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "enemy", x: 450, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 1 },
-                    { type: "enemy", x: 750, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
-                    { type: "enemy", x: 1000, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 2 },
-                    { type: "powerup", x: 550, y: 120, width: 30, height: 30 },
-                    { type: "powerup", x: 850, y: 150, width: 30, height: 30 },
-                    { type: "goal", x: 1400, y: 280, width: 50, height: 80 }
-                ]
-            },
-            {
-                name: "Level 2: High Voltage",
-                scrollSpeed: 5,
-                mapObjects: [
-                    { type: "platform", x: 200, y: 220, width: 120, height: 20 },
-                    { type: "platform", x: 450, y: 150, width: 120, height: 20 },
-                    { type: "platform", x: 700, y: 250, width: 120, height: 20 },
-                    { type: "platform", x: 950, y: 160, width: 120, height: 20 },
-                    { type: "obstacle", x: 350, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", x: 600, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", x: 800, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", x: 1100, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", x: 1300, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "enemy", x: 300, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 1 },
-                    { type: "enemy", x: 550, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
-                    { type: "enemy", x: 850, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 2 },
-                    { type: "enemy", x: 1050, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 1 },
-                    { type: "enemy", x: 1250, y: 320, width: 40, height: 40, speedX: -1, speedY: 0, hp: 3 },
-                    { type: "powerup", x: 250, y: 150, width: 30, height: 30 },
-                    { type: "powerup", x: 500, y: 90, width: 30, height: 30 },
-                    { type: "powerup", x: 1000, y: 100, width: 30, height: 30 },
-                    { type: "goal", x: 1600, y: 220, width: 50, height: 80 }
-                ]
-            },
-            {
-                name: "Level 3: The Final Challenge",
-                scrollSpeed: 6,
-                mapObjects: [
-                    { type: "platform", x: 150, y: 250, width: 100, height: 20 },
-                    { type: "platform", x: 350, y: 180, width: 100, height: 20 },
-                    { type: "platform", x: 600, y: 120, width: 100, height: 20 },
-                    { type: "platform", x: 850, y: 200, width: 100, height: 20 },
-                    { type: "platform", x: 1100, y: 150, width: 100, height: 20 },
-                    { type: "obstacle", x: 300, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", x: 500, y: 340, width: 40, height: 40, hp: 2 },
-                    { type: "obstacle", x: 550, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", x: 750, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", x: 950, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "obstacle", x: 1200, y: 340, width: 40, height: 40, hp: 1 },
-                    { type: "obstacle", x: 1400, y: 340, width: 40, height: 40, hp: Infinity },
-                    { type: "enemy", x: 200, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 1 },
-                    { type: "enemy", x: 400, y: 320, width: 40, height: 40, speedX: -4, speedY: 0, hp: 2 },
-                    { type: "enemy", x: 650, y: 320, width: 40, height: 40, speedX: -2, speedY: 0, hp: 3 },
-                    { type: "enemy", x: 900, y: 320, width: 40, height: 40, speedX: -5, speedY: 0, hp: 1 },
-                    { type: "enemy", x: 1150, y: 320, width: 40, height: 40, speedX: -3, speedY: 0, hp: 2 },
-                    { type: "enemy", x: 1350, y: 320, width: 40, height: 40, speedX: -6, speedY: 0, hp: 1 },
-                    { type: "powerup", x: 200, y: 190, width: 30, height: 30 },
-                    { type: "powerup", x: 400, y: 120, width: 30, height: 30 },
-                    { type: "powerup", x: 650, y: 60, width: 30, height: 30 },
-                    { type: "powerup", x: 900, y: 140, width: 30, height: 30 },
-                    { type: "goal", x: 1750, y: 220, width: 50, height: 80 }
-                ]
-            }
-        ];
-
-
-        function init() {
-            canvas = document.getElementById("canvas");
-            ctx = canvas.getContext("2d");
-            activeLevel = levelData[currentLevelIndex];
-            
-            buildLevelEntities();
-
-            window.addEventListener("keydown", e => { 
-                controls[e.code] = true; 
-                if (e.code === "Space") spawnProjectile(); 
-            });
-            window.addEventListener("keyup", e => { controls[e.code] = false; });
-
-            window.requestAnimationFrame(gameLoop);
-        }
-
-        function buildLevelEntities() {
-            activeEntities = activeLevel.mapObjects.map(item => ({...item}));
-        }
-
-        function spawnProjectile() {
-            activeProjectiles.push({ x: player.x + 40, y: player.y + 15, speedX: 8 });
-        }
-
-        function triggerNextLevel() {
-            currentLevelIndex++;
-            activeEntities = [];
-            activeProjectiles = [];
-            
-            if (currentLevelIndex >= levelData.length) {
-                player.hasWon = true;
-            } else {
-                activeLevel = levelData[currentLevelIndex];
-                buildLevelEntities();
-            }
-        }
-
-
-
-        function checkCollision(box1, box2) {
-            return box1.x < box2.x + box2.width &&
-                   box1.x + (box1.width || 10) > box2.x &&
-                   box1.y < box2.y + box2.height &&
-                   box1.y + (box1.height || 5) > box2.y;
-        }
-
-        function evaluateCollisions() {
-            // Player vs Interactive Entities Loop
-            for (let i = activeEntities.length - 1; i >= 0; i--) {
-                let entity = activeEntities[i];
-                if (entity.type === "platform") continue;
-
-                if (checkCollision(player, entity)) {
-                    if (entity.type === "obstacle" || entity.type === "enemy") {
-                        player.health -= 20;
-                        activeEntities.splice(i, 1);
-                    } else if (entity.type === "powerup") {
-                        player.health = Math.min(100, player.health + 20);
-                        activeEntities.splice(i, 1);
-                    } else if (entity.type === "goal") {
-                        triggerNextLevel();
-                        return;
+                this.levels = [
+                    {
+                        name: "SECTOR_01 // Neon Grid",
+                        scrollSpeed: 2.5,
+                        objects: [
+                            { type: "platform", x: 220, y: 260, w: 160, h: 15, color: '#00ffff' },
+                            { type: "platform", x: 520, y: 190, w: 140, h: 15, color: '#ff0080' },
+                            { type: "obstacle", x: 450, y: 345, w: 35, h: 35, hp: Infinity, color: '#4a4e69' },
+                            { type: "enemy", x: 400, y: 345, w: 35, h: 35, hp: 1, vx: -1.5, range: 120, startX: 400, color: '#ff3333' },
+                            { type: "enemy", x: 850, y: 345, w: 35, h: 35, hp: 2, vx: -1, range: 200, startX: 850, color: '#ff3333' },
+                            { type: "powerup", x: 580, y: 130, w: 20, h: 20, color: '#39ff14' },
+                            { type: "goal", x: 1350, y: 300, w: 40, h: 80, color: '#ffff00' }
+                        ]
+                    },
+                    {
+                        name: "SECTOR_02 // Overclock",
+                        scrollSpeed: 3.5,
+                        objects: [
+                            { type: "platform", x: 180, y: 240, w: 140, h: 15, color: '#00ffff' },
+                            { type: "platform", x: 440, y: 170, w: 140, h: 15, color: '#ff0080' },
+                            { type: "platform", x: 720, y: 230, w: 140, h: 15, color: '#00ffff' },
+                            { type: "enemy", x: 480, y: 135, w: 35, h: 35, hp: 1, vx: -2, range: 80, startX: 480, color: '#ff3333' },
+                            { type: "obstacle", x: 620, y: 345, w: 35, h: 35, hp: 3, color: '#4a4e69' },
+                            { type: "powerup", x: 490, y: 90, w: 20, h: 20, color: '#39ff14' },
+                            { type: "goal", x: 1200, y: 300, w: 40, h: 80, color: '#ffff00' }
+                        ]
                     }
+                ];
+            }
+
+            init() {
+                this.activeLevel = this.levels[this.currentLevelIndex];
+                this.loadEntities();
+                this.bindInput();
+                this.loop();
+            }
+
+            loadEntities() {
+                this.activeEntities = this.activeLevel.objects.map(obj => ({ ...obj }));
+                this.projectiles = [];
+                this.particles = [];
+            }
+
+            bindInput() {
+                window.addEventListener("keydown", e => {
+                    this.controls[e.code] = true;
+                    if (e.code === "Space") {
+                        e.preventDefault();
+                        this.fireLaser();
+                    }
+                    if (["ArrowUp", "ArrowDown", "Space"].includes(e.code)) e.preventDefault();
+                });
+                window.addEventListener("keyup", e => this.controls[e.code] = false);
+            }
+
+            spawnExplosion(x, y, color, count = 8) {
+                for(let i=0; i<count; i++) {
+                    this.particles.push({
+                        x, y,
+                        vx: (Math.random() - 0.5) * 6,
+                        vy: (Math.random() - 0.5) * 6,
+                        radius: Math.random() * 3 + 1,
+                        alpha: 1,
+                        color: color
+                    });
                 }
             }
 
-            for (let p = activeProjectiles.length - 1; p >= 0; p--) {
-                let bullet = activeProjectiles[p];
+            fireLaser() {
+                if (this.player.health <= 0 || this.player.hasWon) return;
+                this.projectiles.push({
+                    x: this.player.x + this.player.width,
+                    y: this.player.y + this.player.height / 2 - 2,
+                    w: 20, h: 4, speed: 12
+                });
+                this.spawnExplosion(this.player.x + this.player.width, this.player.y + this.player.height/2, '#00ffff', 3);
+            }
+
+            checkCollision(r1, r2) {
+                return r1.x < r2.x + (r2.w || r2.width) &&
+                       r1.x + (r1.w || r1.width) > r2.x &&
+                       r1.y < r2.y + (r2.h || r2.height) &&
+                       r1.y + (r1.h || r1.height) > r2.y;
+            }
+
+            update() {
+                if (this.player.health <= 0 || this.player.hasWon) return;
+
+                if (this.controls["KeyA"] || this.controls["ArrowLeft"]) this.player.vx -= this.player.speed * 0.15;
+                if (this.controls["KeyD"] || this.controls["ArrowRight"]) this.player.vx += this.player.speed * 0.15;
                 
-                for (let e = activeEntities.length - 1; e >= 0; e--) {
-                    let entity = activeEntities[e];
-                    
-                    if (checkCollision(bullet, entity)) {
-                        if (entity.hp !== Infinity) {
-                            entity.hp--;
-                            if (entity.hp <= 0) {
-                                activeEntities.splice(e, 1);
-                                player.score += 100;
+                if ((this.controls["KeyW"] || this.controls["ArrowUp"]) && !this.player.isJumping) {
+                    this.player.vy = this.player.jumpForce;
+                    this.player.isJumping = true;
+                }
+
+                this.player.vx *= this.player.friction;
+                this.player.vy += this.player.gravity;
+
+                this.player.x += this.player.vx;
+                this.player.y += this.player.vy;
+
+                if (this.player.y >= 340) {
+                    this.player.y = 340;
+                    this.player.vy = 0;
+                    this.player.isJumping = false;
+                }
+
+                if (this.player.x < 0) this.player.x = 0;
+                if (this.player.x > this.canvas.width - this.player.width) this.player.x = this.canvas.width - this.player.width;
+
+                this.scenery.buildings.forEach(b => {
+                    b.x -= this.activeLevel.scrollSpeed * b.speed;
+                    if (b.x + b.w < 0) b.x = this.canvas.width + Math.random() * 100;
+                });
+                this.scenery.lamps.forEach(l => {
+                    l.x -= this.activeLevel.scrollSpeed;
+                    if (l.x + 40 < 0) l.x = this.canvas.width + 200;
+                });
+
+                this.projectiles.forEach((p, index) => {
+                    p.x += p.speed;
+                    if (p.x > this.canvas.width) this.projectiles.splice(index, 1);
+                });
+
+                this.particles.forEach((p, idx) => {
+                    p.x += p.vx; p.y += p.vy;
+                    p.alpha -= 0.03;
+                    if(p.alpha <= 0) this.particles.splice(idx, 1);
+                });
+
+                let speed = this.activeLevel.scrollSpeed;
+                for (let i = this.activeEntities.length - 1; i >= 0; i--) {
+                    let ent = this.activeEntities[i];
+                    ent.x -= speed;
+
+                    if (ent.type === "enemy") {
+                        ent.x += ent.vx;
+                        if (Math.abs(ent.x - ent.startX) > ent.range) {
+                            ent.vx *= -1;
+                        }
+                    }
+
+                    this.projectiles.forEach((proj, pIdx) => {
+                        if (this.checkCollision(proj, ent)) {
+                            if (ent.type === "enemy" || ent.type === "obstacle") {
+                                this.projectiles.splice(pIdx, 1);
+                                ent.hp--;
+                                this.spawnExplosion(proj.x, proj.y, '#ff0080', 5);
+                                if (ent.hp <= 0) {
+                                    this.spawnExplosion(ent.x + ent.w/2, ent.y + ent.h/2, ent.color, 15);
+                                    this.activeEntities.splice(i, 1);
+                                    this.player.score += 50;
+                                }
                             }
                         }
-                        activeProjectiles.splice(p, 1);
-                        break;
+                    });
+
+                    if (this.checkCollision(this.player, ent)) {
+                        if (ent.type === "platform") {
+                            if (this.player.vy > 0 && (this.player.y + this.player.height - this.player.vy) <= ent.y + 10) {
+                                this.player.y = ent.y - this.player.height;
+                                this.player.vy = 0;
+                                this.player.isJumping = false;
+                            }
+                        } 
+                        else if (ent.type === "enemy" || ent.type === "obstacle") {
+                            this.player.health = Math.max(0, this.player.health - 0.8);
+                            this.player.vx = -6;
+                            this.spawnExplosion(this.player.x + this.player.width/2, this.player.y + this.player.height/2, '#ff3333', 2);
+                        } 
+                        else if (ent.type === "powerup") {
+                            this.spawnExplosion(ent.x, ent.y, ent.color, 12);
+                            this.activeEntities.splice(i, 1);
+                            this.player.score += 100;
+                            this.player.health = Math.min(this.player.maxHealth, this.player.health + 25);
+                        } 
+                        else if (ent.type === "goal") {
+                            if (this.currentLevelIndex + 1 < this.levels.length) {
+                                this.currentLevelIndex++;
+                                this.activeLevel = this.levels[this.currentLevelIndex];
+                                this.player.x = 100;
+                                this.player.vx = 0;
+                                this.loadEntities();
+                            } else {
+                                this.player.hasWon = true;
+                            }
+                        }
                     }
                 }
             }
-        }
 
+            draw() {
+                this.ctx.fillStyle = "#090912";
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-
-        function updatePhysics() {
-            // Background environment panning
-            sceneryData.buildings.elements.forEach(b => {
-                b.x += b.parallaxSpeed - activeLevel.scrollSpeed;
-                if (b.x + b.width < 0) b.x = sceneryData.buildings.loopBounds;
-            });
-
-            sceneryData.lamps.elements.forEach(l => {
-                l.x += l.parallaxSpeed - activeLevel.scrollSpeed;
-                if (l.x + l.width < 0) l.x = sceneryData.lamps.loopBounds;
-            });
-
-            activeEntities.forEach(ent => {
-                ent.x += (ent.speedX || 0) - activeLevel.scrollSpeed;
-                ent.y += (ent.speedY || 0);
-            });
-
-            
-            if (controls["ArrowLeft"]) player.x = Math.max(0, player.x - 4);
-            if (controls["ArrowRight"]) player.x = Math.min(canvas.width - player.width, player.x + 4);
-            
-           
-            if (controls["ArrowUp"] && !player.isJumping) {
-                player.velocityY = -12;
-                player.isJumping = true;
-            }
-
-           
-            player.velocityY += 0.5;
-            player.y += player.velocityY;
-
-            
-            if (player.y >= 340) {
-                player.y = 340;
-                player.velocityY = 0;
-                player.isJumping = false;
-            }
-
-            activeEntities.filter(e => e.type === "platform").forEach(platform => {
-                if (player.x + player.width > platform.x && 
-                    player.x < platform.x + platform.width &&
-                    player.y + player.height >= platform.y && 
-                    player.y + 30 < platform.y && 
-                    player.velocityY > 0) {
+                this.scenery.buildings.forEach(b => {
+                    this.ctx.fillStyle = b.color;
+                    this.ctx.fillRect(b.x, this.canvas.height - b.h, b.w, b.h);
                     
-                    player.y = platform.y - player.height;
-                    player.velocityY = 0;
-                    player.isJumping = false;
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+                    for(let wG = 15; wG < b.w - 15; wG += 25) {
+                        for(let hG = 20; hG < b.h - 50; hG += 40) {
+                            this.ctx.fillRect(b.x + wG, (this.canvas.height - b.h) + hG, 10, 15);
+                        }
+                    }
+                });
+
+                this.scenery.lamps.forEach(l => {
+                    this.ctx.fillStyle = "#223";
+                    this.ctx.fillRect(l.x, 260, 6, 120);
+                    let gradient = this.ctx.createRadialGradient(l.x+3, 260, 5, l.x+3, 290, 60);
+                    gradient.addColorStop(0, l.color);
+                    gradient.addColorStop(1, 'transparent');
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(l.x+3, 260, 60, 0, Math.PI, false);
+                    this.ctx.fill();
+                });
+
+                this.ctx.fillStyle = "#111122";
+                this.ctx.fillRect(0, 380, this.canvas.width, 20);
+                this.ctx.fillStyle = "#ff0080";
+                this.ctx.fillRect(0, 378, this.canvas.width, 2);
+
+                this.activeEntities.forEach(ent => {
+                    this.ctx.fillStyle = ent.color;
+                    this.ctx.shadowBlur = (ent.type !== "obstacle") ? 10 : 0;
+                    this.ctx.shadowColor = ent.color;
+                    this.ctx.fillRect(ent.x, ent.y, ent.w, ent.h);
+                });
+                this.ctx.shadowBlur = 0;
+
+                this.ctx.fillStyle = "#00ffff";
+                this.projectiles.forEach(p => this.ctx.fillRect(p.x, p.y, p.w, p.h));
+
+                this.particles.forEach(p => {
+                    this.ctx.save();
+                    this.ctx.globalAlpha = p.alpha;
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+                });
+
+                // --- DRAWING HALLEBOT ---
+                if (this.player.image.complete && this.player.image.naturalWidth !== 0) {
+                    // This triggers if you have a real 'hallebot.png' image file ready
+                    this.ctx.drawImage(this.player.image, this.player.x, this.player.y, this.player.width, this.player.height);
+                } else {
+                    // Cool code backup that draws a retro robot avatar with a visor and antenna!
+                    this.ctx.save();
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = "#39ff14";
+                    
+                    let px = this.player.x;
+                    let py = this.player.y;
+
+                    // Wheels / Tread Base
+                    this.ctx.fillStyle = "#333344";
+                    this.ctx.fillRect(px + 4, py + 32, 32, 8);
+
+                    // Main Steel Body
+                    this.ctx.fillStyle = "#556677";
+                    this.ctx.fillRect(px + 6, py + 14, 28, 18);
+
+                    // Glowing Core Panel
+                    this.ctx.fillStyle = "#39ff14";
+                    this.ctx.fillRect(px + 12, py + 18, 16, 8);
+
+                    // Head
+                    this.ctx.fillStyle = "#778899";
+                    this.ctx.fillRect(px + 10, py + 2, 20, 12);
+
+                    // Cyber Visor Eyes
+                    this.ctx.fillStyle = "#00ffff";
+                    this.ctx.fillRect(px + 14, py + 5, 12, 4);
+
+                    // Antenna
+                    this.ctx.fillStyle = "#39ff14";
+                    this.ctx.fillRect(px + 19, py, 2, 2);
+
+                    this.ctx.restore();
                 }
-            });
 
-            for (let i = activeProjectiles.length - 1; i >= 0; i--) {
-                activeProjectiles[i].x += activeProjectiles[i].speedX;
-                if (activeProjectiles[i].x > canvas.width) activeProjectiles.splice(i, 1);
-            }
-
-            evaluateCollisions();
-        }
-
-
-        function drawGraphics() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            
-            if (player.hasWon) {
-                ctx.fillStyle = "#00ff00";
-                ctx.font = "bold 30px sans-serif";
-                ctx.fillText("You won congrats", 180, 200);
-                return;
-            }
-            if (player.health <= 0) {
-                ctx.fillStyle = "#ff0000";
-                ctx.font = "bold 30px sans-serif";
-                ctx.fillText("mission failed", 180, 200);
-                return;
-            }
-
-
-            ctx.fillStyle = "#223";
-            sceneryData.buildings.elements.forEach(b => {
-                ctx.fillRect(b.x, canvas.height - b.height, b.width, b.height);
-            });
-            ctx.fillStyle = "#ff0";
-            sceneryData.lamps.elements.forEach(l => {
-                ctx.fillRect(l.x, canvas.height - l.height, l.width, l.height);
-            });
-
-          
-            activeEntities.forEach(ent => {
-                if (ent.type === "platform") ctx.fillStyle = "#555";
-                else if (ent.type === "obstacle") ctx.fillStyle = "#ff0000";
-                else if (ent.type === "enemy") ctx.fillStyle = "orange";
-                else if (ent.type === "powerup") ctx.fillStyle = "#00ff00";
-                else if (ent.type === "goal") ctx.fillStyle = "#ffff00";
+                // Diagnostics Interface UI
+                this.ctx.textAlign = "left";
+                this.ctx.fillStyle = "rgba(255,255,255,0.85)";
+                this.ctx.font = "12px 'Courier New'";
+                this.ctx.fillText(this.activeLevel.name, 25, 35);
+                this.ctx.fillText(`SCORE // ${String(this.player.score).padStart(5, '0')}`, 25, 55);
                 
-                ctx.fillRect(ent.x, ent.y, ent.width, ent.height);
-            });
+                this.ctx.fillStyle = "#222";
+                this.ctx.fillRect(25, 70, 150, 6);
+                this.ctx.fillStyle = this.player.health > 30 ? "#39ff14" : "#ff3333";
+                this.ctx.fillRect(25, 70, (this.player.health / this.player.maxHealth) * 150, 6);
 
-       
-            ctx.fillStyle = "#ff00ff";
-            activeProjectiles.forEach(bullet => {
-                ctx.fillRect(bullet.x, bullet.y, 10, 5);
-            });
-
-        
-            ctx.fillStyle = "#00d2ff"; 
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-
-            ctx.fillStyle = "#111"; 
-            ctx.fillRect(player.x + 5, player.y + 5, 30, 15);
-
-
-            ctx.fillStyle = player.health < 40 ? "#ff0055" : "#00ffcc"; 
-            ctx.fillRect(player.x + 10, player.y + 8, 20, 8);
-
-            if (player.isJumping) {
-                ctx.fillStyle = Math.random() > 0.5 ? "#ff3300" : "#ff9900"; 
-                ctx.fillRect(player.x - 10, player.y + 20, 10, 12);
-            } else {
-                ctx.fillStyle = "#888";
-                ctx.fillRect(player.x - 6, player.y + 10, 6, 20);
+                if (this.player.health <= 0 || this.player.hasWon) {
+                    this.ctx.fillStyle = "rgba(4, 4, 8, 0.85)";
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.textAlign = "center";
+                    this.ctx.font = "bold 28px 'Courier New'";
+                    
+                    if (this.player.health <= 0) {
+                        this.ctx.fillStyle = "#ff3333";
+                        this.ctx.fillText("SYSTEM FAILURE // GAME OVER", this.canvas.width / 2, this.canvas.height / 2);
+                    } else {
+                        this.ctx.fillStyle = "#39ff14";
+                        this.ctx.fillText("BREACH SUCCESSFUL // YOU WIN", this.canvas.width / 2, this.canvas.height / 2);
+                    }
+                }
             }
 
-
-            ctx.fillStyle = "#333";
-            ctx.fillRect(player.x + 2, player.y + 38, 36, 5); 
-            ctx.fillStyle = "#555";
-            ctx.fillRect(player.x + 6, player.y + 39, 6, 3);  
-            ctx.fillRect(player.x + 28, player.y + 39, 6, 3); 
-
-            ctx.fillStyle = "#fff";
-            ctx.font = "600 16px sans-serif";
-            ctx.fillText(activeLevel.name, 20, 30);
-            ctx.fillText("Score: " + player.score, 680, 30);
-            ctx.fillText("HP: " + player.health, 680, 55);
-        }
-
-        function gameLoop() {
-            if (!player.hasWon && player.health > 0) {
-                updatePhysics();
+            loop() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.loop());
             }
-            drawGraphics();
-            window.requestAnimationFrame(gameLoop);
         }
 
-        window.onload = init;
+        window.onload = () => {
+            const game = new Cyberplatformer();
+            game.init();
+        };
     </script>
 </body>
 </html>
